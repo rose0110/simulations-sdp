@@ -1,3 +1,6 @@
+Voici le code modifié selon votre demande, où le champ PMSS est maintenant un champ de saisie sans calcul automatique :
+
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -26,7 +29,7 @@
             <th>Mois</th>
             <th class="narrow">Salaire brut</th>
             <th class="narrow">Nbre d'heures effectuées</th>
-            <th>PMSS</th>
+            <th class="narrow">PMSS</th>
             <th>TA</th>
             <th>TB</th>
             <th>T1</th>
@@ -62,10 +65,9 @@
     </div>
 
     <script>
-        const PMSS_MAX = 3864; // Mettez ici la valeur maximale actuelle du PMSS
         const SMIC = 11.52;
         const MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-        const PMSS_MENSUEL = 3864;
+
         let cumulData = {
             salaireBrut: 0,
             heures: 0,
@@ -89,7 +91,7 @@
                     const cell = row.insertCell(j);
                     if (j === 0) {
                         cell.textContent = MOIS[i];
-                    } else if (j < 3) {
+                    } else if (j < 4) {
                         const input = document.createElement('input');
                         input.type = 'number';
                         input.step = '0.01';
@@ -128,35 +130,31 @@
             const cells = row.cells;
             const salaireBrut = parseFloat(cells[1].querySelector('input').value) || 0;
             const heures = parseFloat(cells[2].querySelector('input').value) || 0;
+            const pmss = parseFloat(cells[3].querySelector('input').value) || 0;
 
             cumulData.salaireBrut += salaireBrut;
             cumulData.heures += heures;
 
-            
-let pmss = heures > 0 ? PMSS_MENSUEL * (heures / 151.67) : 0;
-pmss = Math.min(pmss, PMSS_MAX); // Appliquez le maximum ici
-
-            const pmssCumul = cumulData.heures > 0 ? PMSS_MENSUEL * (cumulData.heures / 151.67) : 0;
-
-            cumulData.ta = Math.min(cumulData.salaireBrut, pmssCumul);
-cumulData.tb = Math.min(Math.max(0, cumulData.salaireBrut - pmssCumul), 3 * pmssCumul);
-cumulData.t1 = cumulData.ta;
-cumulData.t2 = Math.min(Math.max(0, cumulData.salaireBrut - pmssCumul), 7 * pmssCumul);
+            cumulData.ta = Math.min(cumulData.salaireBrut, monthIndex * pmss);
+            cumulData.tb = Math.min(Math.max(0, cumulData.salaireBrut - monthIndex * pmss), 3 * monthIndex * pmss);
+            cumulData.t1 = cumulData.ta;
+            cumulData.t2 = Math.min(Math.max(0, cumulData.salaireBrut - monthIndex * pmss), 7 * monthIndex * pmss);
 
             cumulData.baseComplementMaladie = cumulData.salaireBrut > (2.5 * SMIC * cumulData.heures) ? cumulData.salaireBrut : 0;
             cumulData.baseComplementAF = cumulData.salaireBrut > (3.5 * SMIC * cumulData.heures) ? cumulData.salaireBrut : 0;
-            cumulData.baseCET = cumulData.salaireBrut > pmssCumul ? cumulData.salaireBrut : 0;
+            cumulData.baseCET = cumulData.salaireBrut > monthIndex * pmss ? cumulData.salaireBrut : 0;
 
             cumulData.chomage = cumulData.ta + cumulData.tb;
             cumulData.retraite = cumulData.t1 + cumulData.t2;
 
-            cells[3].textContent = pmss.toFixed(2);
             cells[4].textContent = (cumulData.ta - prevMonthData.ta).toFixed(2);
             cells[5].textContent = (cumulData.tb - prevMonthData.tb).toFixed(2);
             cells[6].textContent = (cumulData.t1 - prevMonthData.t1).toFixed(2);
             cells[7].textContent = (cumulData.t2 - prevMonthData.t2).toFixed(2);
             cells[8].textContent = (cumulData.baseComplementMaladie - prevMonthData.baseComplementMaladie).toFixed(2);
-            cells[9].textContent = (cumulData.baseComplementAF - prevMonthData.baseComplementAF).toFixed(2);
+            cells[9].textContent = (cumulData.baseComplementAF - prevMonthData.baseComplementAF).toFixed(2
+
+);
             cells[10].textContent = (cumulData.baseCET - prevMonthData.baseCET).toFixed(2);
             cells[11].textContent = (cumulData.chomage - prevMonthData.chomage).toFixed(2);
             cells[12].textContent = (cumulData.retraite - prevMonthData.retraite).toFixed(2);
@@ -168,3 +166,4 @@ cumulData.t2 = Math.min(Math.max(0, cumulData.salaireBrut - pmssCumul), 7 * pmss
     </script>
 </body>
 </html>
+```
