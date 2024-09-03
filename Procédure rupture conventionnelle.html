@@ -1,0 +1,250 @@
+<html><head><base href="https://telerc.travail.gouv.fr/"><link rel="icon" type="image/x-icon" href="/favicon.ico"><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculateur de procédure de rupture conventionnelle</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.3.0/luxon.min.js"></script>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f0f4f8;
+        color: #333;
+    }
+    .container {
+        max-width: 800px;
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-top: 50px;
+        margin-bottom: 50px;
+    }
+    h1, h2, h3 {
+        color: #2c3e50;
+    }
+    h1 {
+        margin-bottom: 30px;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+    }
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #bdc3c7;
+        margin-bottom: 15px;
+    }
+    .btn-primary {
+        background-color: #3498db;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        transition: background-color 0.3s ease;
+    }
+    .btn-primary:hover {
+        background-color: #2980b9;
+    }
+    #result {
+        background-color: #ecf0f1;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 30px;
+    }
+    .result-item {
+        font-size: 16px;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    .calculation-detail {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .detail-label {
+        color: #7f8c8d;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .fade-in {
+        animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .step {
+        background-color: #f1f3f5;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .step h2 {
+        color: #495057;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    .alert {
+        font-size: 0.9rem;
+        margin-top: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Calculateur de procédure de rupture conventionnelle</h1>
+        <form id="ruptureForm" class="fade-in">
+            <div class="mb-3">
+                <label for="calculType" class="form-label">Point de départ du calcul :</label>
+                <select id="calculType" class="form-select">
+                    <option value="convocation">Date de convocation</option>
+                    <option value="entretien">Date d'entretien</option>
+                    <option value="signature">Date de signature</option>
+                    <option value="sortie">Date de sortie</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="dateChoisie" class="form-label">Date choisie :</label>
+                <input type="date" id="dateChoisie" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label for="signatureEntretien" class="form-label">Signature le jour de l'entretien :</label>
+                <select id="signatureEntretien" class="form-select">
+                    <option value="oui">Oui</option>
+                    <option value="non">Non</option>
+                </select>
+            </div>
+            <button type="button" onclick="calculerRupture()" class="btn btn-primary">Calculer</button>
+        </form>
+
+        <div id="result" class="hidden fade-in"></div>
+        
+        <button id="resetButton" class="btn btn-primary mt-3" style="display: none;">Relancer le calcul</button>
+    </div>
+
+    <script>
+        const DateTime = luxon.DateTime;
+        const form = document.getElementById('ruptureForm');
+        const resultDiv = document.getElementById('result');
+        const resetButton = document.getElementById('resetButton');
+
+        function addWorkingDays(date, days) {
+            let workingDays = 0;
+            let currentDate = date;
+            while (workingDays < Math.abs(days)) {
+                currentDate = days > 0 ? currentDate.plus({ days: 1 }) : currentDate.minus({ days: 1 });
+                if (currentDate.weekday < 6) {
+                    workingDays++;
+                }
+            }
+            return currentDate;
+        }
+
+        function adjustToWorkingDay(date) {
+            while (date.weekday > 5) {
+                date = date.plus({ days: 1 });
+            }
+            return date;
+        }
+
+        function calculerRupture() {
+            const calculType = document.getElementById('calculType').value;
+            const dateChoisie = DateTime.fromISO(document.getElementById('dateChoisie').value);
+            const signatureJourEntretienValue = document.getElementById('signatureEntretien').value;
+            let dateConvocation, dateEntretien, dateSignature, dateFinRetractation, dateSortie;
+
+            if (calculType === 'sortie') {
+                dateSortie = dateChoisie;
+                dateFinRetractation = addWorkingDays(dateSortie, -1);
+                dateSignature = adjustToWorkingDay(dateFinRetractation.minus({ days: 15 }));
+                dateEntretien = dateSignature;
+                dateConvocation = addWorkingDays(dateEntretien, -5);
+            } else {
+                if (calculType === 'convocation') {
+                    dateConvocation = dateChoisie;
+                    dateEntretien = addWorkingDays(dateConvocation, 5);
+                } else if (calculType === 'entretien') {
+                    dateEntretien = dateChoisie;
+                    dateConvocation = addWorkingDays(dateEntretien, -5);
+                } else if (calculType === 'signature') {
+                    dateSignature = dateChoisie;
+                    dateEntretien = dateSignature;
+                    dateConvocation = addWorkingDays(dateEntretien, -5);
+                }
+
+                dateSignature = dateSignature || (signatureJourEntretienValue === 'oui' ? dateEntretien : dateEntretien.plus({ days: 1 }));
+                dateFinRetractation = adjustToWorkingDay(dateSignature.plus({ days: 15 }));
+                dateSortie = dateFinRetractation.plus({ days: 1 });
+            }
+
+            const result = `
+                <h2>Résultat de la simulation</h2>
+                
+                <div class="alert alert-info">
+                    <strong>Lien vers le site du gouvernement pour saisir la procédure :</strong>
+                    <a href="https://www.telerc.travail.gouv.fr/" target="_blank">https://www.telerc.travail.gouv.fr/</a>
+                </div>
+                
+                <div class="step">
+                    <h2>Étape 1 : Convocation à l'entretien préalable</h2>
+                    <p>Date d'envoi de la convocation : ${dateConvocation.toFormat('dd/MM/yyyy')}</p>
+                    <p>Date de l'entretien préalable : ${dateEntretien.toFormat('dd/MM/yyyy')}</p>
+                    <p><strong>Délai entre la convocation et l'entretien : 5 jours ouvrables</strong></p>
+                    <ul>
+                        <li>Mentionnez l'objet de l'entretien dans la convocation : rupture conventionnelle.</li>
+                        <li>Indiquez la possibilité pour le salarié de se faire assister.</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        Attention : Le délai de 5 jours ouvrables entre la convocation et l'entretien est un minimum légal. Ce délai commence à courir le lendemain de la remise en main propre ou de la première présentation de la lettre recommandée.
+                    </div>
+                    <a href="/modele-convocation-rc" class="btn btn-primary">Télécharger le modèle de convocation</a>
+                </div>
+                
+                <div class="step">
+                    <h2>Étape 2 : Entretien préalable et signature de la convention</h2>
+                    <p>Date de l'entretien : ${dateEntretien.toFormat('dd/MM/yyyy')}</p>
+                    <p>Date de signature de la convention : ${dateSignature.toFormat('dd/MM/yyyy')}</p>
+                    <ul>
+                        <li>Discutez des conditions de la rupture conventionnelle.</li>
+                        <li>Négociez les termes de la convention, notamment l'indemnité spécifique.</li>
+                        <li>Rappelez au salarié son droit d'être assisté.</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        Attention : La convention peut être signée à l'issue de l'entretien ou ultérieurement. Aucun délai minimum n'est imposé entre l'entretien et la signature.
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h2>Étape 3 : Période de rétractation et homologation</h2>
+                    <p>Début du délai de rétractation : ${dateSignature.plus({ days: 1 }).toFormat('dd/MM/yyyy')}</p>
+                    <p>Fin du délai de rétractation : ${dateFinRetractation.toFormat('dd/MM/yyyy')}</p>
+                    <p>Date de sortie du salarié : ${dateSortie.toFormat('dd/MM/yyyy')}</p>
+                    <ul>
+                        <li>Chaque partie dispose de 15 jours calendaires pour se rétracter.</li>
+                        <li>Le délai de rétractation commence le lendemain de la signature de la convention.</li>
+                        <li>Après le délai de rétractation, la convention doit être envoyée à la DREETS pour homologation.</li>
+                    </ul>
+                    <div class="alert alert-warning">
+                        Attention : La DREETS dispose de 15 jours ouvrables à compter de la réception de la demande pour homologuer la convention. L'absence de réponse dans ce délai vaut homologation.
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="/calcul-indemnite-rc" class="btn btn-primary">Calcul de l'indemnité de rupture conventionnelle</a>
+                    <a href="/modele-convention-rc" class="btn btn-primary ml-2">Télécharger le modèle de convention</a>
+                </div>
+            `;
+
+            resultDiv.innerHTML = result;
+            resultDiv.classList.remove('hidden');
+            resetButton.style.display = 'block';
+            form.style.display = 'none';
+        }
+
+        resetButton.addEventListener('click', function() {
+            form.reset();
+            form.style.display = 'block';
+            resultDiv.classList.add('hidden');
+            resetButton.style.display = 'none';
+        });
+    </script>
+</body></html>

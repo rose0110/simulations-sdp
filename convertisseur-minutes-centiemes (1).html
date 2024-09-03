@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertisseur Minutes-Centièmes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f6f3;
+            border-left: 5px solid #1abc9c;
+            border-radius: 0 5px 5px 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Convertisseur Minutes-Centièmes</h1>
+        
+        <div id="choice-screen">
+            <div class="btn-group">
+                <button onclick="showForm('minutes')">Convertir des minutes en centièmes</button>
+                <button onclick="showForm('cent')">Convertir des centièmes en minutes</button>
+            </div>
+        </div>
+        
+        <div id="conversion-form" class="hidden">
+            <div class="form-group">
+                <label id="input-label"></label>
+                <input type="number" id="input-value" step="0.01" required>
+            </div>
+            <div class="btn-group">
+                <button onclick="convert()">Convertir</button>
+                <button onclick="restart()">Recommencer</button>
+            </div>
+        </div>
+        
+        <div id="result" class="hidden"></div>
+    </div>
+
+    <script>
+        let currentMode = '';
+
+        function showForm(mode) {
+            currentMode = mode;
+            document.getElementById('choice-screen').classList.add('hidden');
+            document.getElementById('conversion-form').classList.remove('hidden');
+            document.getElementById('input-label').innerText = mode === 'minutes' ? 
+                "Entrez le nombre de minutes :" : "Entrez le nombre de centièmes :";
+            document.getElementById('input-value').value = '';
+            document.getElementById('result').classList.add('hidden');
+        }
+
+        function convert() {
+            const inputValue = parseFloat(document.getElementById('input-value').value);
+            let result;
+            let explanation;
+
+            if (currentMode === 'minutes') {
+                result = inputValue / 60;
+                explanation = `${inputValue} minutes équivaut à ${result.toFixed(2)} en notation décimale.`;
+            } else {
+                result = inputValue * 60;
+                explanation = `${inputValue} en notation décimale équivaut à ${result.toFixed(2)} minutes.`;
+            }
+
+            document.getElementById('result').innerHTML = `
+                <h3>Résultat de la conversion :</h3>
+                <p>${explanation}</p>
+                <p><strong>Note :</strong> Dans ce système, 1 heure (60 minutes) est représentée par 1,00, 30 minutes par 0,50, 15 minutes par 0,25, etc.</p>
+            `;
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        function restart() {
+            document.getElementById('choice-screen').classList.remove('hidden');
+            document.getElementById('conversion-form').classList.add('hidden');
+            document.getElementById('result').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

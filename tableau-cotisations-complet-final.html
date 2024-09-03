@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcul de Bases de Cotisations Sociales avec Régularisation Mensuelle</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #2c3e50; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: right; }
+        th { background-color: #34495e; color: white; }
+        input { width: 100%; box-sizing: border-box; text-align: right; padding: 5px; }
+        .calculated { background-color: #ecf0f1; }
+        .narrow { width: 80px; }
+        .info { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        .details { margin-top: 20px; }
+        .details ul { padding-left: 20px; }
+        .details li { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Calcul de Bases de Cotisations Sociales avec Régularisation Mensuelle</h1>
+    <table id="cotisationsTable">
+        <tr>
+            <th>Mois</th>
+            <th class="narrow">Salaire brut</th>
+            <th class="narrow">Nbre d'heures effectuées</th>
+            <th>PMSS</th>
+            <th>TA</th>
+            <th>TB</th>
+            <th>T1</th>
+            <th>T2</th>
+            <th>Base complément maladie</th>
+            <th>Base complément allocation familiale</th>
+            <th>Base CET</th>
+            <th>TA + TB (Chômage AGS)</th>
+            <th>T1 + T2 (Retraite)</th>
+        </tr>
+    </table>
+
+    <div class="info">
+        <h2>Détails des calculs</h2>
+        <p><strong>PMSS 2024</strong> : 3864 €</p>
+        <p><strong>SMIC au 31/12/2023</strong> : 11.52 €</p>
+        <p>Les calculs sont effectués sur les valeurs cumulées, avec une régularisation mensuelle.</p>
+    </div>
+
+    <div class="details">
+        <h2>Explications des règles de calcul</h2>
+        <ul>
+            <li><strong>Tranche A (TA)</strong> = Partie du salaire limitée au PMSS</li>
+            <li><strong>Tranche B (TB)</strong> = Partie du salaire comprise entre 1 et 4 fois le PMSS</li>
+            <li><strong>Tranche 1 (T1)</strong> = Identique à la Tranche A</li>
+            <li><strong>Tranche 2 (T2)</strong> = Partie du salaire comprise entre 1 et 8 fois le PMSS</li>
+            <li><strong>Base complément maladie</strong> = Totalité du salaire si le salaire cumulé > (2,5 * SMIC 31/12/2023 * heures cumulées), sinon 0</li>
+            <li><strong>Base complément allocation familiale</strong> = Totalité du salaire si le salaire cumulé > (3,5 * SMIC 31/12/2023 * heures cumulées), sinon 0</li>
+            <li><strong>Base CET</strong> = Totalité du salaire si le salaire cumulé > PMSS cumulé, sinon 0</li>
+            <li><strong>TA + TB (Chômage AGS)</strong> = Somme de TA et TB, utilisée pour les cotisations chômage et AGS</li>
+            <li><strong>T1 + T2 (Retraite)</strong> = Somme de T1 et T2, utilisée pour les cotisations de retraite complémentaire</li>
+        </ul>
+    </div>
+
+    <script>
+        const PMSS_MAX = 3864; // Mettez ici la valeur maximale actuelle du PMSS
+        const SMIC = 11.52;
+        const MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        const PMSS_MENSUEL = 3864;
+        let cumulData = {
+            salaireBrut: 0,
+            heures: 0,
+            ta: 0,
+            tb: 0,
+            t1: 0,
+            t2: 0,
+            baseComplementMaladie: 0,
+            baseComplementAF: 0,
+            baseCET: 0,
+            chomage: 0,
+            retraite: 0
+        };
+        let prevMonthData = {...cumulData};
+
+        function initializeTable() {
+            const table = document.getElementById('cotisationsTable');
+            for (let i = 0; i < 12; i++) {
+                const row = table.insertRow(-1);
+                for (let j = 0; j < 13; j++) {
+                    const cell = row.insertCell(j);
+                    if (j === 0) {
+                        cell.textContent = MOIS[i];
+                    } else if (j < 3) {
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.step = '0.01';
+                        input.oninput = () => recalculateAllRows();
+                        cell.appendChild(input);
+                    } else {
+                        cell.classList.add('calculated');
+                    }
+                }
+            }
+        }
+
+        function recalculateAllRows() {
+            const table = document.getElementById('cotisationsTable');
+            cumulData = {
+                salaireBrut: 0,
+                heures: 0,
+                ta: 0,
+                tb: 0,
+                t1: 0,
+                t2: 0,
+                baseComplementMaladie: 0,
+                baseComplementAF: 0,
+                baseCET: 0,
+                chomage: 0,
+                retraite: 0
+            };
+            prevMonthData = {...cumulData};
+            
+            for (let i = 1; i <= 12; i++) {
+                calculateRow(table.rows[i], i);
+            }
+        }
+
+        function calculateRow(row, monthIndex) {
+            const cells = row.cells;
+            const salaireBrut = parseFloat(cells[1].querySelector('input').value) || 0;
+            const heures = parseFloat(cells[2].querySelector('input').value) || 0;
+
+            cumulData.salaireBrut += salaireBrut;
+            cumulData.heures += heures;
+
+            
+let pmss = heures > 0 ? PMSS_MENSUEL * (heures / 151.67) : 0;
+pmss = Math.min(pmss, PMSS_MAX); // Appliquez le maximum ici
+
+            const pmssCumul = cumulData.heures > 0 ? PMSS_MENSUEL * (cumulData.heures / 151.67) : 0;
+
+            cumulData.ta = Math.min(cumulData.salaireBrut, pmssCumul);
+cumulData.tb = Math.min(Math.max(0, cumulData.salaireBrut - pmssCumul), 3 * pmssCumul);
+cumulData.t1 = cumulData.ta;
+cumulData.t2 = Math.min(Math.max(0, cumulData.salaireBrut - pmssCumul), 7 * pmssCumul);
+
+            cumulData.baseComplementMaladie = cumulData.salaireBrut > (2.5 * SMIC * cumulData.heures) ? cumulData.salaireBrut : 0;
+            cumulData.baseComplementAF = cumulData.salaireBrut > (3.5 * SMIC * cumulData.heures) ? cumulData.salaireBrut : 0;
+            cumulData.baseCET = cumulData.salaireBrut > pmssCumul ? cumulData.salaireBrut : 0;
+
+            cumulData.chomage = cumulData.ta + cumulData.tb;
+            cumulData.retraite = cumulData.t1 + cumulData.t2;
+
+            cells[3].textContent = pmss.toFixed(2);
+            cells[4].textContent = (cumulData.ta - prevMonthData.ta).toFixed(2);
+            cells[5].textContent = (cumulData.tb - prevMonthData.tb).toFixed(2);
+            cells[6].textContent = (cumulData.t1 - prevMonthData.t1).toFixed(2);
+            cells[7].textContent = (cumulData.t2 - prevMonthData.t2).toFixed(2);
+            cells[8].textContent = (cumulData.baseComplementMaladie - prevMonthData.baseComplementMaladie).toFixed(2);
+            cells[9].textContent = (cumulData.baseComplementAF - prevMonthData.baseComplementAF).toFixed(2);
+            cells[10].textContent = (cumulData.baseCET - prevMonthData.baseCET).toFixed(2);
+            cells[11].textContent = (cumulData.chomage - prevMonthData.chomage).toFixed(2);
+            cells[12].textContent = (cumulData.retraite - prevMonthData.retraite).toFixed(2);
+
+            prevMonthData = {...cumulData};
+        }
+
+        initializeTable();
+    </script>
+</body>
+</html>

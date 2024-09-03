@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur de procédure de licenciement pour motif personnel</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        h1 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; cursor: pointer; }
+        #result { margin-top: 20px; }
+        .etape { background-color: #f8f9fa; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; }
+        .etape h3 { margin-top: 0; color: #007bff; }
+        .conseil { background-color: #d4edda; border: 1px solid #c3e6cb; padding: 10px; margin-top: 10px; }
+        .attention { background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin-top: 10px; }
+        .btn-telecharger { background-color: #28a745; color: white; padding: 5px 10px; text-decoration: none; display: inline-block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulateur de procédure de licenciement pour motif personnel</h1>
+        <form id="licenciementForm">
+            <div class="form-group">
+                <label for="ancienneteAnnees">Ancienneté du salarié à la date d'envoi de la notification (années) :</label>
+                <input type="number" id="ancienneteAnnees" required min="0">
+            </div>
+            <div class="form-group">
+                <label for="ancienneteMois">Ancienneté du salarié à la date d'envoi de la notification (mois) :</label>
+                <input type="number" id="ancienneteMois" required min="0" max="11">
+            </div>
+            <button type="submit">Simuler la procédure</button>
+        </form>
+
+        <div id="result" style="display: none;">
+            <h2>Résultat de la simulation</h2>
+            <div class="etape">
+                <h3>Étape 1 : Convocation à l'entretien préalable</h3>
+                <p>Date d'envoi de la convocation : <span id="dateConvocation"></span></p>
+                <div class="conseil">
+                    <h4>Conseil :</h4>
+                    <ul>
+                        <li>Mentionnez clairement l'objet de l'entretien (envisager un licenciement).</li>
+                        <li>Indiquez la possibilité pour le salarié de se faire assister.</li>
+                        <li>Précisez la date, l'heure et le lieu de l'entretien.</li>
+                    </ul>
+                </div>
+                <div class="attention">
+                    <p>Attention : La convocation doit être envoyée par lettre recommandée avec AR ou remise en main propre contre décharge.</p>
+                </div>
+                <a href="#" class="btn-telecharger">Télécharger le modèle de convocation</a>
+            </div>
+
+            <div class="etape">
+                <h3>Étape 2 : Entretien préalable</h3>
+                <p>Date de l'entretien préalable : <span id="dateEntretien"></span></p>
+                <div class="conseil">
+                    <h4>Conseil :</h4>
+                    <ul>
+                        <li>Exposez l'entretien en listant les faits reprochés au salarié.</li>
+                        <li>Écoutez attentivement les explications du salarié.</li>
+                        <li>Prenez des notes détaillées pendant l'entretien.</li>
+                    </ul>
+                </div>
+                <div class="attention">
+                    <p>Attention : Ne prononcez pas la décision de licenciement lors de cet entretien.</p>
+                </div>
+            </div>
+
+            <div class="etape">
+                <h3>Étape 3 : Notification du licenciement</h3>
+                <p>Date de notification du licenciement : <span id="dateNotification"></span></p>
+                <div class="conseil">
+                    <h4>Conseil :</h4>
+                    <ul>
+                        <li>Détaillez précisément les motifs du licenciement dans la lettre.</li>
+                        <li>Vérifiez que les motifs correspondent à ceux évoqués lors de l'entretien.</li>
+                        <li>Mentionnez les droits et obligations du salarié (préavis, indemnités, etc.).</li>
+                    </ul>
+                </div>
+                <div class="attention">
+                    <p>Attention : La notification doit être envoyée par lettre recommandée avec AR.</p>
+                </div>
+                <a href="#" class="btn-telecharger">Télécharger le modèle de lettre de licenciement</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('licenciementForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var result = document.getElementById('result');
+            result.style.display = 'block';
+
+            var today = new Date();
+            var dateConvocation = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            var dateEntretien = new Date(dateConvocation.getTime() + 8 * 24 * 60 * 60 * 1000);
+            var dateNotification = new Date(dateEntretien.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+            document.getElementById('dateConvocation').textContent = dateConvocation.toLocaleDateString('fr-FR');
+            document.getElementById('dateEntretien').textContent = dateEntretien.toLocaleDateString('fr-FR');
+            document.getElementById('dateNotification').textContent = dateNotification.toLocaleDateString('fr-FR');
+        });
+    </script>
+</body>
+</html>

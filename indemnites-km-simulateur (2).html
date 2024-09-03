@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcul des indemnités KM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #e8f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #3498db;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .info-box {
+            background-color: #e8f6f3;
+            border-left: 5px solid #1abc9c;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 0 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="form-container">
+        <h1>Calcul des indemnités KM</h1>
+        <div class="info-box">
+            <p>Ce simulateur vous aide à calculer vos indemnités kilométriques pour l'année 2024. Remplissez les informations demandées et cliquez sur "Calculer" pour obtenir une estimation de vos indemnités.</p>
+        </div>
+        <form id="kmForm">
+            <div class="form-group">
+                <label for="vehicleType">Type de véhicule :</label>
+                <select id="vehicleType" required>
+                    <option value="">Choisissez un type</option>
+                    <option value="voiture">Voiture</option>
+                    <option value="moto">Moto</option>
+                    <option value="cyclomoteur">Deux roues < 50 cm3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="isElectric">Véhicule électrique :</label>
+                <select id="isElectric" required>
+                    <option value="">Choisissez une option</option>
+                    <option value="oui">Oui</option>
+                    <option value="non">Non</option>
+                </select>
+            </div>
+            <div class="form-group" id="fiscalPowerGroup" style="display:none;">
+                <label for="fiscalPower">Puissance fiscale (en CV) :</label>
+                <input type="number" id="fiscalPower" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="kilometers">Nombre de kilomètres parcourus depuis le début de l'année :</label>
+                <input type="number" id="kilometers" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="paidAmount">Montant déjà versé depuis le début de l'année (€) :</label>
+                <input type="number" id="paidAmount" min="0" step="0.01" required>
+            </div>
+            <button type="submit">Calculer</button>
+        </form>
+    </div>
+
+    <div class="container" id="result-container" style="display:none;">
+        <h1>Résultat du calcul</h1>
+        <div id="result"></div>
+        <button id="restart" style="margin-top: 20px;">Recommencer</button>
+    </div>
+
+    <script>
+        document.getElementById('vehicleType').addEventListener('change', function() {
+            document.getElementById('fiscalPowerGroup').style.display = 
+                this.value === 'voiture' || this.value === 'moto' ? 'block' : 'none';
+        });
+
+        document.getElementById('kmForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const vehicleType = document.getElementById('vehicleType').value;
+            const isElectric = document.getElementById('isElectric').value;
+            const fiscalPower = document.getElementById('fiscalPower').value;
+            const kilometers = document.getElementById('kilometers').value;
+            const paidAmount = document.getElementById('paidAmount').value;
+
+            let indemnity = calculateIndemnity(vehicleType, isElectric, fiscalPower, kilometers);
+            let remainingIndemnity = indemnity - parseFloat(paidAmount);
+
+            const resultHtml = `
+                <h2>Résumé des informations</h2>
+                <p><strong>Type de véhicule :</strong> ${vehicleType}</p>
+                <p><strong>Véhicule électrique :</strong> ${isElectric}</p>
+                ${vehicleType === 'voiture' || vehicleType === 'moto' ? `<p><strong>Puissance fiscale :</strong> ${fiscalPower} CV</p>` : ''}
+                <p><strong>Kilomètres parcourus depuis le début de l'année :</strong> ${kilometers} km</p>
+                <p><strong>Montant déjà versé depuis le début de l'année :</strong> ${paidAmount} €</p>
+                <h3>Résultats</h3>
+                <p><strong>Montant total de l'indemnité :</strong> ${indemnity.toFixed(2)} €</p>
+                <p><strong>Montant restant à verser :</strong> ${remainingIndemnity.toFixed(2)} €</p>
+                <div class="info-box">
+                    <p>Ces calculs sont basés sur les barèmes kilométriques 2024. N'oubliez pas que ces indemnités sont destinées à couvrir les frais de carburant et d'entretien liés à l'utilisation de votre véhicule personnel pour des déplacements professionnels.</p>
+                </div>
+            `;
+
+            document.getElementById('result').innerHTML = resultHtml;
+            document.getElementById('form-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+        });
+
+        document.getElementById('restart').addEventListener('click', function() {
+            document.getElementById('form-container').style.display = 'block';
+            document.getElementById('result-container').style.display = 'none';
+            document.getElementById('kmForm').reset();
+        });
+
+        function calculateIndemnity(vehicleType, isElectric, fiscalPower, kilometers) {
+            let indemnity = 0;
+            const km = parseFloat(kilometers);
+
+            if (vehicleType === 'voiture') {
+                if (fiscalPower <= 3) {
+                    indemnity = km <= 5000 ? km * 0.529 : km <= 20000 ? (km * 0.316) + 1065 : km * 0.370;
+                } else if (fiscalPower == 4) {
+                    indemnity = km <= 5000 ? km * 0.606 : km <= 20000 ? (km * 0.340) + 1330 : km * 0.407;
+                } else if (fiscalPower == 5) {
+                    indemnity = km <= 5000 ? km * 0.636 : km <= 20000 ? (km * 0.357) + 1395 : km * 0.427;
+                } else if (fiscalPower == 6) {
+                    indemnity = km <= 5000 ? km * 0.665 : km <= 20000 ? (km * 0.374) + 1457 : km * 0.447;
+                } else {
+                    indemnity = km <= 5000 ? km * 0.697 : km <= 20000 ? (km * 0.394) + 1515 : km * 0.470;
+                }
+            } else if (vehicleType === 'moto') {
+                if (fiscalPower <= 2) {
+                    indemnity = km <= 3000 ? km * 0.395 : km <= 6000 ? (km * 0.099) + 891 : km * 0.248;
+                } else if (fiscalPower <= 5) {
+                    indemnity = km <= 3000 ? km * 0.468 : km <= 6000 ? (km * 0.082) + 1158 : km * 0.275;
+                } else {
+                    indemnity = km <= 3000 ? km * 0.606 : km <= 6000 ? (km * 0.079) + 1583 : km * 0.343;
+                }
+            } else if (vehicleType === 'cyclomoteur') {
+                indemnity = km <= 3000 ? km * 0.315 : km <= 6000 ? (km * 0.079) + 711 : km * 0.198;
+            }
+
+            if (isElectric === 'oui') {
+                indemnity *= 1.2;
+            }
+
+            return indemnity;
+        }
+    </script>
+</body>
+</html>

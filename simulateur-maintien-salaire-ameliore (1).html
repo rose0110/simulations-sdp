@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur de fin de date de maintien de salaire</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #resultat {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulateur de fin de date de maintien de salaire</h1>
+        <form id="simulateurForm">
+            <label for="dateDebut">Date de début d'arrêt :</label>
+            <input type="date" id="dateDebut" required>
+
+            <label for="joursMaintien">Nombre de jours à maintenir :</label>
+            <input type="number" id="joursMaintien" required min="1" max="365">
+
+            <button type="submit">Calculer</button>
+        </form>
+        <div id="resultat"></div>
+    </div>
+
+    <script>
+        function formatDate(date) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('fr-FR', options);
+        }
+
+        document.getElementById('simulateurForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const dateDebut = new Date(document.getElementById('dateDebut').value);
+            const joursMaintien = parseInt(document.getElementById('joursMaintien').value);
+
+            const dateFin = new Date(dateDebut);
+            dateFin.setDate(dateFin.getDate() + joursMaintien - 1);
+
+            const resultatDiv = document.getElementById('resultat');
+            resultatDiv.innerHTML = `
+                Date de début : ${formatDate(dateDebut)}<br>
+                Date de fin du maintien : ${formatDate(dateFin)}<br>
+                Nombre de jours de maintien : ${joursMaintien}
+            `;
+            resultatDiv.style.opacity = '0';
+            setTimeout(() => { resultatDiv.style.opacity = '1'; }, 10);
+        });
+    </script>
+</body>
+</html>

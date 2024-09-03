@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur pédagogique de procédure de licenciement pour motif personnel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.3.0/luxon.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #bdc3c7;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .step {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .step-label {
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .conseil, .attention {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .conseil {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .attention {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">Simulateur de procédure de licenciement pour motif personnel</h1>
+        <form id="licenciementForm" class="fade-in">
+            <div class="mb-3">
+                <label for="typeLicenciement" class="form-label">Type de licenciement :</label>
+                <select id="typeLicenciement" class="form-select" required>
+                    <option value="">Choisissez le type de licenciement</option>
+                    <option value="nonDisciplinaire">Non disciplinaire</option>
+                    <option value="fauteSimple">Faute simple</option>
+                    <option value="fauteGrave">Faute grave</option>
+                    <option value="fauteLourde">Faute lourde</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="dateConvocation" class="form-label">Date prévue d'envoi de la convocation :</label>
+                <input type="date" id="dateConvocation" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="ancienneteAnnees" class="form-label">Ancienneté du salarié à la date d'envoi de la notification (années) :</label>
+                <input type="number" id="ancienneteAnnees" class="form-control" min="0" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="ancienneteMois" class="form-label">Ancienneté du salarié (mois supplémentaires) :</label>
+                <input type="number" id="ancienneteMois" class="form-control" min="0" max="11" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Simuler la procédure</button>
+        </form>
+
+        <div id="result" class="hidden fade-in"></div>
+        
+        <button id="resetButton" class="btn btn-primary mt-3" style="display: none;">Recommencer</button>
+    </div>
+
+    <script>
+        const DateTime = luxon.DateTime;
+        const form = document.getElementById('licenciementForm');
+        const resultDiv = document.getElementById('result');
+        const resetButton = document.getElementById('resetButton');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            simulerProcedure();
+        });
+
+        resetButton.addEventListener('click', function() {
+            form.reset();
+            resultDiv.classList.add('hidden');
+            resultDiv.innerHTML = '';
+            resetButton.style.display = 'none';
+            form.style.display = 'block';
+        });
+
+        function addWorkingDays(date, days) {
+            let result = date;
+            while (days > 0) {
+                result = result.plus({ days: 1 });
+                if (result.weekday <= 5) {
+                    days--;
+                }
+            }
+            return result;
+        }
+
+        function simulerProcedure() {
+            const typeLicenciement = document.getElementById('typeLicenciement').value;
+            const dateConvocation = DateTime.fromISO(document.getElementById('dateConvocation').value);
+            const ancienneteAnnees = parseInt(document.getElementById('ancienneteAnnees').value);
+            const ancienneteMois = parseInt(document.getElementById('ancienneteMois').value);
+
+            const dateEntretien = addWorkingDays(dateConvocation, 5);
+            const dateNotification = addWorkingDays(dateEntretien, 2);
+
+            let dureePrevis = 0;
+            if (typeLicenciement === 'nonDisciplinaire' || typeLicenciement === 'fauteSimple') {
+                if (ancienneteAnnees >= 2) {
+                    dureePrevis = 2;
+                } else if (ancienneteAnnees >= 1 || (ancienneteAnnees === 0 && ancienneteMois >= 6)) {
+                    dureePrevis = 1;
+                }
+            }
+
+            const dateSortie = dateNotification.plus({ months: dureePrevis });
+
+            let result = `
+                <h2>Résultat de la simulation</h2>
+                <div class="step">
+                    <h3 class="step-label">Étape 1 : Convocation à l'entretien préalable</h3>
+                    <p>Date d'envoi de la convocation : ${dateConvocation.toFormat('dd/MM/yyyy')}</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> 
+                        <ul>
+                            <li>Mentionnez clairement l'objet de l'entretien (envisager un licenciement).</li>
+                            <li>Indiquez la possibilité pour le salarié de se faire assister.</li>
+                            <li>Précisez la date, l'heure et le lieu de l'entretien.</li>
+                        </ul>
+                    </div>
+                    <div class="attention">
+                        <strong>Attention :</strong> La convocation doit être envoyée par lettre recommandée avec AR ou remise en main propre contre décharge.
+                    </div>
+                    <a href="#" class="btn btn-primary mt-2" onclick="alert('Téléchargement du modèle de convocation')">Télécharger le modèle de convocation</a>
+                </div>
+
+                <div class="step">
+                    <h3 class="step-label">Étape 2 : Entretien préalable</h3>
+                    <p>Date de l'entretien préalable : ${dateEntretien.toFormat('dd/MM/yyyy')}</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> 
+                        <ul>
+                            <li>Préparez l'entretien en listant les faits reprochés au salarié.</li>
+                            <li>Écoutez attentivement les explications du salarié.</li>
+                            <li>Prenez des notes détaillées pendant l'entretien.</li>
+                        </ul>
+                    </div>
+                    <div class="attention">
+                        <strong>Attention :</strong> Ne prononcez pas la décision de licenciement lors de cet entretien.
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3 class="step-label">Étape 3 : Notification du licenciement</h3>
+                    <p>Date de notification du licenciement : ${dateNotification.toFormat('dd/MM/yyyy')}</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> 
+                        <ul>
+                            <li>Détaillez précisément les motifs du licenciement dans la lettre.</li>
+                            <li>Vérifiez que les motifs correspondent à ceux évoqués lors de l'entretien.</li>
+                            <li>Mentionnez les droits et obligations du salarié (préavis, indemnités, etc.).</li>
+                        </ul>
+                    </div>
+                    <div class="attention">
+                        <strong>Attention :</strong> La notification doit être envoyée par lettre recommandée avec AR.
+                    </div>
+                    <a href="#" class="btn btn-primary mt-2" onclick="alert('Téléchargement du modèle de lettre de licenciement')">Télécharger le modèle de lettre de licenciement</a>
+                </div>
+
+                <div class="step">
+                    <h3 class="step-label">Étape 4 : Préavis et fin du contrat</h3>
+                    <p>Durée du préavis : ${dureePrevis} mois</p>
+                    <p>Date de sortie : ${dateSortie.toFormat('dd/MM/yyyy')}</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> 
+                        <ul>
+                            <li>Préparez les documents de fin de contrat (certificat de travail, reçu pour solde de tout compte, attestation Pôle Emploi).</li>
+                            <li>Calculez précisément les indemnités dues au salarié.</li>
+                        </ul>
+                    </div>
+                    ${typeLicenciement === 'fauteGrave' || typeLicenciement === 'fauteLourde' ? 
+                        "<div class='attention'><strong>Attention :</strong> En cas de faute grave ou lourde, le préavis n'est ni exécuté ni payé.</div>" : ""}
+                </div>
+            `;
+
+            if (typeLicenciement === 'nonDisciplinaire' || typeLicenciement === 'fauteSimple') {
+                result += `
+                    <div class="step">
+                        <h3 class="step-label">Étape 5 : Indemnité de licenciement</h3>
+                        <p><strong>Note :</strong> Dans ce cas, le salarié a droit à une indemnité de licenciement.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Calculez précisément l'indemnité en tenant compte de l'ancienneté et du salaire de référence.
+                        </div>
+                        <a href="#" class="btn btn-primary mt-2" onclick="alert('Redirection vers le calculateur d\'indemnité de licenciement')">Calculer l'indemnité de licenciement</a>
+                    </div>
+                `;
+            }
+
+            result += `
+                <div class="step">
+                    <h3 class="step-label">Informations importantes</h3>
+                    <ul>
+                        <li>L'entretien préalable doit avoir lieu au minimum 5 jours ouvrables après l'envoi de la convocation.</li>
+                        <li>La notification du licenciement doit être envoyée au plus tard dans un délai de 1 mois après l'entretien préalable, et ne peut être envoyée moins de 2 jours ouvrables après cet entretien.</li>
+                        <li>En cas de faute grave ou lourde, le salarié ne bénéficie pas de préavis.</li>
+                        <li>Le salarié licencié a droit aux allocations chômage, sauf en cas de faute lourde.</li>
+                    </ul>
+                </div>
+                <p class="mt-4 text-muted"><strong>Attention :</strong> Cette simulation se base sur les dispositions légales. Les résultats peuvent varier selon votre convention collective et votre situation spécifique. Consultez un professionnel du droit du travail pour des conseils adaptés à votre cas.</p>
+            `;
+
+            resultDiv.innerHTML = result;
+            resultDiv.classList.remove('hidden');
+            resetButton.style.display = 'block';
+            form.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

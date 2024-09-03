@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de durée de congé maternité/paternité</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.3.0/luxon.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #bdc3c7;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .result {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .calculation-detail {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .detail-label {
+            color: #7f8c8d;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">Calculateur de durée de congé maternité/paternité</h1>
+        <form id="congeForm" class="fade-in">
+            <div class="mb-3">
+                <label for="congeType" class="form-label">Type de congé :</label>
+                <select id="congeType" class="form-select" required>
+                    <option value="">Choisissez le type de congé</option>
+                    <option value="maternite">Maternité</option>
+                    <option value="paternite">Paternité</option>
+                </select>
+            </div>
+
+            <div id="materniteFields" style="display: none;">
+                <div class="mb-3">
+                    <label for="situationFamiliale" class="form-label">Situation familiale :</label>
+                    <select id="situationFamiliale" class="form-select">
+                        <option value="premier">Premier enfant</option>
+                        <option value="deuxieme">Deuxième enfant</option>
+                        <option value="troisieme">Troisième enfant ou plus</option>
+                        <option value="jumeaux">Jumeaux</option>
+                        <option value="triples">Triplés ou plus</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="dateAccouchementPrevue" class="form-label">Date d'accouchement prévue :</label>
+                    <input type="date" id="dateAccouchementPrevue" class="form-control">
+                </div>
+            </div>
+
+            <div id="paterniteFields" style="display: none;">
+                <div class="mb-3">
+                    <label for="dateNaissancePrevue" class="form-label">Date de naissance prévue :</label>
+                    <input type="date" id="dateNaissancePrevue" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="naissanceMultiple" class="form-label">Naissance multiple :</label>
+                    <select id="naissanceMultiple" class="form-select">
+                        <option value="non">Non</option>
+                        <option value="oui">Oui</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Calculer</button>
+        </form>
+
+        <div id="result" class="hidden fade-in"></div>
+        
+        <button id="resetButton" class="btn btn-primary mt-3" style="display: none;">Réinitialiser</button>
+    </div>
+
+    <script>
+        const DateTime = luxon.DateTime;
+        const form = document.getElementById('congeForm');
+        const resultDiv = document.getElementById('result');
+        const congeTypeSelect = document.getElementById('congeType');
+        const materniteFields = document.getElementById('materniteFields');
+        const paterniteFields = document.getElementById('paterniteFields');
+        const resetButton = document.getElementById('resetButton');
+
+        congeTypeSelect.addEventListener('change', function() {
+            if (this.value === 'maternite') {
+                materniteFields.style.display = 'block';
+                paterniteFields.style.display = 'none';
+            } else if (this.value === 'paternite') {
+                materniteFields.style.display = 'none';
+                paterniteFields.style.display = 'block';
+            } else {
+                materniteFields.style.display = 'none';
+                paterniteFields.style.display = 'none';
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculerConge();
+        });
+
+        resetButton.addEventListener('click', function() {
+            form.reset();
+            resultDiv.classList.add('hidden');
+            resultDiv.innerHTML = '';
+            resetButton.style.display = 'none';
+            materniteFields.style.display = 'none';
+            paterniteFields.style.display = 'none';
+        });
+
+        function calculerConge() {
+            const congeType = document.getElementById('congeType').value;
+            let result = '';
+
+            if (congeType === 'maternite') {
+                const situationFamiliale = document.getElementById('situationFamiliale').value;
+                const dateAccouchementPrevue = DateTime.fromISO(document.getElementById('dateAccouchementPrevue').value);
+
+                let dureePrenatale, dureePostnatale, dureeTotal;
+
+                switch (situationFamiliale) {
+                    case 'premier':
+                    case 'deuxieme':
+                        dureePrenatale = 6;
+                        dureePostnatale = 10;
+                        dureeTotal = 16;
+                        break;
+                    case 'troisieme':
+                        dureePrenatale = 8;
+                        dureePostnatale = 18;
+                        dureeTotal = 26;
+                        break;
+                    case 'jumeaux':
+                        dureePrenatale = 12;
+                        dureePostnatale = 22;
+                        dureeTotal = 34;
+                        break;
+                    case 'triples':
+                        dureePrenatale = 24;
+                        dureePostnatale = 22;
+                        dureeTotal = 46;
+                        break;
+                }
+
+                const dateDebutConge = dateAccouchementPrevue.minus({ weeks: dureePrenatale });
+                const dateFinConge = dateAccouchementPrevue.plus({ weeks: dureePostnatale });
+
+                result = `
+                    <h2>Résultat du calcul pour le congé maternité</h2>
+                    <ul>
+                        <li>Durée du congé prénatal : ${dureePrenatale} semaines</li>
+                        <li>Durée du congé postnatal : ${dureePostnatale} semaines</li>
+                        <li>Durée totale du congé maternité : ${dureeTotal} semaines</li>
+                        <li>Date de début du congé : ${dateDebutConge.toFormat('dd/MM/yyyy')}</li>
+                        <li>Date de fin du congé : ${dateFinConge.toFormat('dd/MM/yyyy')}</li>
+                    </ul>
+                `;
+
+            } else if (congeType === 'paternite') {
+                const dateNaissancePrevue = DateTime.fromISO(document.getElementById('dateNaissancePrevue').value);
+                const naissanceMultiple = document.getElementById('naissanceMultiple').value;
+
+                const dureeCongeNaissance = 3;
+                const dureeCongePaternitePremierePeriode = 4;
+                let dureeCongePaterniteTotale = naissanceMultiple === 'oui' ? 32 : 25;
+
+                const dateDebutCongeNaissance = dateNaissancePrevue;
+                const dateFinCongeNaissance = dateDebutCongeNaissance.plus({ days: dureeCongeNaissance - 1 });
+                const dateDebutCongePaternitePremierePeriode = dateFinCongeNaissance.plus({ days: 1 });
+                const dateFinCongePaternitePremierePeriode = dateDebutCongePaternitePremierePeriode.plus({ days: dureeCongePaternitePremierePeriode - 1 });
+                const dateFinCongePaterniteMax = dateNaissancePrevue.plus({ months: 6 });
+
+                result = `
+                    <h2>Résultat du calcul pour le congé paternité</h2>
+                    <ul>
+                        <li>Durée totale du congé paternité : ${dureeCongePaterniteTotale} jours calendaires</li>
+                        <li>Date de début du congé de naissance : ${dateDebutCongeNaissance.toFormat('dd/MM/yyyy')}</li>
+                        <li>Date de fin du congé de naissance : ${dateFinCongeNaissance.toFormat('dd/MM/yyyy')}</li>
+                        <li>Date de début de la première période obligatoire du congé paternité : ${dateDebutCongePaternitePremierePeriode.toFormat('dd/MM/yyyy')}</li>
+                        <li>Date de fin de la première période obligatoire du congé paternité : ${dateFinCongePaternitePremierePeriode.toFormat('dd/MM/yyyy')}</li>
+                        <li>Le reste du congé paternité (${dureeCongePaterniteTotale - dureeCongePaternitePremierePeriode} jours) peut être pris en une ou deux fois, avec une durée minimale de 5 jours pour chaque période.</li>
+                        <li>Date limite pour prendre le congé paternité : ${dateFinCongePaterniteMax.toFormat('dd/MM/yyyy')}</li>
+                    </ul>
+                `;
+            }
+
+            result += `
+                <p class="mt-4 text-muted">Attention : Il s'agit d'une simulation basée sur les règles générales. Les durées et dates peuvent varier en fonction de votre situation personnelle et professionnelle.</p>
+                <p class="text-muted">Nous vous recommandons de vérifier ces informations auprès de votre employeur ou de la Sécurité sociale pour obtenir des informations précises adaptées à votre situation.</p>
+            `;
+
+            resultDiv.innerHTML = result;
+            resultDiv.classList.remove('hidden');
+            resetButton.style.display = 'block';
+            form.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

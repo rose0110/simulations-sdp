@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de rémunération - Apprentissage et Contrat Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+    <div id="formContainer" class="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6 text-center">Calculateur de rémunération - Apprentissage et Contrat Pro</h1>
+        
+        <form id="remunerationForm" class="space-y-4">
+            <div>
+                <label for="typeContrat" class="block mb-1 font-semibold">Type de contrat</label>
+                <select id="typeContrat" class="w-full p-2 border rounded" required>
+                    <option value="">Choisir un type de contrat</option>
+                    <option value="apprentissage">Contrat d'apprentissage</option>
+                    <option value="professionnalisation">Contrat de professionnalisation</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="dateNaissance" class="block mb-1 font-semibold">Date de naissance</label>
+                <input type="date" id="dateNaissance" class="w-full p-2 border rounded" required>
+            </div>
+
+            <div>
+                <label for="anneeDebut" class="block mb-1 font-semibold">Année au début du contrat</label>
+                <select id="anneeDebut" class="w-full p-2 border rounded" required>
+                    <option value="1">1ère année</option>
+                    <option value="2">2ème année</option>
+                    <option value="3">3ème année</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="dateDebut" class="block mb-1 font-semibold">Date de début du contrat</label>
+                <input type="date" id="dateDebut" class="w-full p-2 border rounded" required>
+            </div>
+
+            <div>
+                <label for="dateFin" class="block mb-1 font-semibold">Date de fin du contrat</label>
+                <input type="date" id="dateFin" class="w-full p-2 border rounded" required>
+            </div>
+
+            <div id="datesAnnees"></div>
+
+            <div id="contratProFields" class="hidden">
+                <label for="niveauFormation" class="block mb-1 font-semibold">Niveau de formation</label>
+                <select id="niveauFormation" class="w-full p-2 border rounded">
+                    <option value="inferieur">Inférieur au Bac</option>
+                    <option value="bac">Bac ou équivalent</option>
+                    <option value="superieur">Supérieur au Bac</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-500 text-white p-3 rounded hover:bg-blue-600 transition">
+                Calculer la rémunération
+            </button>
+        </form>
+    </div>
+
+    <div id="resultatContainer" class="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md mt-8 hidden">
+        <h2 class="text-2xl font-bold mb-6 text-center">Résultats du calcul</h2>
+        <div id="resumeInfos" class="mb-6"></div>
+        <div id="evolutionSalaire"></div>
+        <button id="recalculer" class="w-full bg-green-500 text-white p-3 rounded hover:bg-green-600 transition mt-6">
+            Recalculer
+        </button>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('remunerationForm');
+        const typeContrat = document.getElementById('typeContrat');
+        const contratProFields = document.getElementById('contratProFields');
+        const formContainer = document.getElementById('formContainer');
+        const resultatContainer = document.getElementById('resultatContainer');
+        const dateDebut = document.getElementById('dateDebut');
+        const dateFin = document.getElementById('dateFin');
+        const datesAnnees = document.getElementById('datesAnnees');
+        const recalculerBtn = document.getElementById('recalculer');
+
+        // Définir la date de début par défaut au 1er septembre de l'année en cours
+        const today = new Date();
+        const defaultStartDate = new Date(today.getFullYear(), 8, 1);
+        dateDebut.valueAsDate = defaultStartDate;
+
+        typeContrat.addEventListener('change', function() {
+            contratProFields.style.display = this.value === 'professionnalisation' ? 'block' : 'none';
+        });
+
+        dateDebut.addEventListener('change', updateDatesAnnees);
+        dateFin.addEventListener('change', updateDatesAnnees);
+
+        function updateDatesAnnees() {
+            const debut = new Date(dateDebut.value);
+            const fin = new Date(dateFin.value);
+            if (isNaN(debut.getTime()) || isNaN(fin.getTime())) return;
+
+            const dureeContrat = Math.ceil((fin - debut) / (1000 * 60 * 60 * 24 * 365.25));
+            datesAnnees.innerHTML = '';
+
+            for (let i = 2; i <= dureeContrat; i++) {
+                const dateField = document.createElement('div');
+                dateField.innerHTML = `
+                    <label for="dateAnnee${i}" class="block mb-1 font-semibold">Date de début ${i}ème année</label>
+                    <input type="date" id="dateAnnee${i}" class="w-full p-2 border rounded" required>
+                `;
+                datesAnnees.appendChild(dateField);
+            }
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculerRemuneration();
+        });
+
+        recalculerBtn.addEventListener('click', function() {
+            formContainer.style.display = 'block';
+            resultatContainer.style.display = 'none';
+        });
+
+        function calculerRemuneration() {
+            const typeContrat = document.getElementById('typeContrat').value;
+            const dateNaissance = new Date(document.getElementById('dateNaissance').value);
+            const anneeDebut = parseInt(document.getElementById('anneeDebut').value);
+            const dateDebut = new Date(document.getElementById('dateDebut').value);
+            const dateFin = new Date(document.getElementById('dateFin').value);
+            const niveauFormation = document.getElementById('niveauFormation').value;
+
+            let evolutionSalaire = [];
+
+            if (typeContrat === 'apprentissage') {
+                evolutionSalaire = calculateApprentissageEvolution(dateNaissance, anneeDebut, dateDebut, dateFin);
+            } else if (typeContrat === 'professionnalisation') {
+                evolutionSalaire = calculateProfessionnalisationEvolution(dateNaissance, niveauFormation, dateDebut, dateFin);
+            }
+
+            displayResults(evolutionSalaire);
+            displayResumeInfos();
+            formContainer.style.display = 'none';
+            resultatContainer.style.display = 'block';
+        }
+
+        // Les fonctions de calcul restent inchangées
+
+        function displayResults(evolutionSalaire) {
+            const evolutionSalaireDiv = document.getElementById('evolutionSalaire');
+            let evolutionHtml = '<h3 class="font-semibold mt-4 mb-2">Évolution du salaire :</h3>';
+            
+            if (evolutionSalaire.length > 0) {
+                const salaireEmbauche = evolutionSalaire[0].pourcentage;
+                evolutionHtml += `<p class="mb-2"><strong>Salaire à l'embauche :</strong> ${salaireEmbauche}% du SMIC</p>`;
+            }
+            
+            evolutionHtml += '<ul class="list-disc pl-5">';
+            evolutionSalaire.forEach((item, index) => {
+                if (index === 0 || item.pourcentage !== evolutionSalaire[index - 1].pourcentage) {
+                    evolutionHtml += `<li>Du ${formatDate(item.date)} : ${item.pourcentage}% du SMIC</li>`;
+                }
+            });
+            
+            evolutionHtml += '</ul>';
+            evolutionSalaireDiv.innerHTML = evolutionHtml;
+        }
+
+        function displayResumeInfos() {
+            const resumeInfosDiv = document.getElementById('resumeInfos');
+            const typeContrat = document.getElementById('typeContrat').value;
+            const dateNaissance = document.getElementById('dateNaissance').value;
+            const anneeDebut = document.getElementById('anneeDebut').value;
+            const dateDebut = document.getElementById('dateDebut').value;
+            const dateFin = document.getElementById('dateFin').value;
+            const niveauFormation = document.getElementById('niveauFormation').value;
+
+            let resumeHtml = '<h3 class="font-semibold mb-2">Résumé des informations saisies :</h3>';
+            resumeHtml += `<p><strong>Type de contrat :</strong> ${typeContrat === 'apprentissage' ? 'Apprentissage' : 'Professionnalisation'}</p>`;
+            resumeHtml += `<p><strong>Date de naissance :</strong> ${formatDate(new Date(dateNaissance))}</p>`;
+            resumeHtml += `<p><strong>Année de début :</strong> ${anneeDebut}</p>`;
+            resumeHtml += `<p><strong>Date de début :</strong> ${formatDate(new Date(dateDebut))}</p>`;
+            resumeHtml += `<p><strong>Date de fin :</strong> ${formatDate(new Date(dateFin))}</p>`;
+            if (typeContrat === 'professionnalisation') {
+                resumeHtml += `<p><strong>Niveau de formation :</strong> ${niveauFormation}</p>`;
+            }
+
+            resumeInfosDiv.innerHTML = resumeHtml;
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de procédure de rupture conventionnelle</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.3.0/luxon.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #bdc3c7;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .result-item {
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .calculation-detail {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .detail-label {
+            color: #7f8c8d;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">Calculateur de procédure de rupture conventionnelle</h1>
+        <form id="ruptureForm" class="fade-in">
+            <div class="mb-3">
+                <label for="calculType" class="form-label">Point de départ du calcul :</label>
+                <select id="calculType" class="form-select" required>
+                    <option value="">Choisissez le point de départ</option>
+                    <option value="convocation">Date d'envoi de la convocation</option>
+                    <option value="entretien">Date de l'entretien préalable</option>
+                    <option value="signature">Date de signature de la convention</option>
+                    <option value="sortie">Date de sortie souhaitée</option>
+                </select>
+            </div>
+
+            <div id="dateFields" class="mb-3" style="display: none;">
+                <label for="dateChoisie" class="form-label">Date choisie :</label>
+                <input type="date" id="dateChoisie" class="form-control" required>
+            </div>
+
+            <div id="signatureJourEntretien" class="mb-3" style="display: none;">
+                <label for="signatureEntretien" class="form-label">La convention sera-t-elle signée le jour de l'entretien ?</label>
+                <select id="signatureEntretien" class="form-select" required>
+                    <option value="oui">Oui</option>
+                    <option value="non">Non</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Calculer</button>
+        </form>
+
+        <div id="result" class="hidden fade-in"></div>
+        
+        <button id="resetButton" class="btn btn-primary mt-3" style="display: none;">Relancer le calcul</button>
+    </div>
+
+    <script>
+        const DateTime = luxon.DateTime;
+        const form = document.getElementById('ruptureForm');
+        const resultDiv = document.getElementById('result');
+        const calculTypeSelect = document.getElementById('calculType');
+        const dateFields = document.getElementById('dateFields');
+        const signatureJourEntretien = document.getElementById('signatureJourEntretien');
+        const resetButton = document.getElementById('resetButton');
+
+        calculTypeSelect.addEventListener('change', function() {
+            if (this.value) {
+                dateFields.style.display = 'block';
+                if (this.value === 'entretien' || this.value === 'convocation') {
+                    signatureJourEntretien.style.display = 'block';
+                } else {
+                    signatureJourEntretien.style.display = 'none';
+                }
+            } else {
+                dateFields.style.display = 'none';
+                signatureJourEntretien.style.display = 'none';
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculerRupture();
+        });
+
+        resetButton.addEventListener('click', function() {
+            form.reset();
+            resultDiv.classList.add('hidden');
+            resultDiv.innerHTML = '';
+            resetButton.style.display = 'none';
+            dateFields.style.display = 'none';
+            signatureJourEntretien.style.display = 'none';
+        });
+
+        function isWorkingDay(date) {
+            return date.weekday >= 1 && date.weekday <= 5;
+        }
+
+        function addWorkingDays(date, days) {
+            let result = date;
+            let direction = days > 0 ? 1 : -1;
+            while (days !== 0) {
+                result = result.plus({ days: direction });
+                if (isWorkingDay(result)) {
+                    days -= direction;
+                }
+            }
+            return result;
+        }
+
+        function adjustToWorkingDay(date) {
+            while (!isWorkingDay(date)) {
+                date = date.plus({ days: 1 });
+            }
+            return date;
+        }
+
+        function calculerRupture() {
+            const calculType = document.getElementById('calculType').value;
+            const dateChoisie = DateTime.fromISO(document.getElementById('dateChoisie').value);
+            const signatureJourEntretienValue = document.getElementById('signatureEntretien').value;
+            let dateConvocation, dateEntretien, dateSignature, dateFinRetractation, dateDepotDREETS, dateValidationDREETS, dateSortie;
+
+            if (calculType === 'sortie') {
+                dateSortie = dateChoisie;
+                dateValidationDREETS = dateSortie.minus({ days: 1 });
+                dateDepotDREETS = addWorkingDays(dateValidationDREETS, -15);
+                dateFinRetractation = addWorkingDays(dateDepotDREETS, -1);
+                dateSignature = adjustToWorkingDay(dateFinRetractation.minus({ days: 15 }));
+                dateEntretien = dateSignature;
+                dateConvocation = addWorkingDays(dateEntretien, -5);
+            } else {
+                if (calculType === 'convocation') {
+                    dateConvocation = dateChoisie;
+                    dateEntretien = addWorkingDays(dateConvocation, 5);
+                } else if (calculType === 'entretien') {
+                    dateEntretien = dateChoisie;
+                    dateConvocation = addWorkingDays(dateEntretien, -5);
+                } else if (calculType === 'signature') {
+                    dateSignature = dateChoisie;
+                    dateEntretien = dateSignature;
+                    dateConvocation = addWorkingDays(dateEntretien, -5);
+                }
+
+                dateSignature = dateSignature || (signatureJourEntretienValue === 'oui' ? dateEntretien : dateEntretien.plus({ days: 1 }));
+                dateFinRetractation = adjustToWorkingDay(dateSignature.plus({ days: 15 }));
+                dateDepotDREETS = dateFinRetractation.plus({ days: 1 });
+                dateValidationDREETS = addWorkingDays(dateDepotDREETS, 15);
+                dateSortie = dateValidationDREETS.plus({ days: 1 });
+            }
+
+            const result = `
+                <h2>Calendrier de la procédure de rupture conventionnelle</h2>
+                <p class="text-muted">Ce calendrier concerne uniquement les salariés non protégés.</p>
+                <ul>
+                    <li class="result-item">Date d'envoi de la convocation : ${dateConvocation.toFormat('dd/MM/yyyy')}</li>
+                    <li class="result-item">Date de l'entretien préalable : ${dateEntretien.toFormat('dd/MM/yyyy')}</li>
+                    <li class="result-item">Date de signature de la convention : ${dateSignature.toFormat('dd/MM/yyyy')}</li>
+                    <li class="result-item">Fin du délai de rétractation : ${dateFinRetractation.toFormat('dd/MM/yyyy')}</li>
+                    <li class="result-item">Date de dépôt à la DREETS : ${dateDepotDREETS.toFormat('dd/MM/yyyy')}</li>
+                    <li class="result-item">Date de validation par la DREETS : ${dateValidationDREETS.toFormat('dd/MM/yyyy')}</li>
+                    <li class="result-item">Date de sortie du salarié : ${dateSortie.toFormat('dd/MM/yyyy')}</li>
+                </ul>
+                <div class="calculation-detail mt-4">
+                    <h3 class="detail-label">Informations importantes :</h3>
+                    <ul>
+                        <li>La convocation doit être envoyée au moins 5 jours ouvrables avant l'entretien.</li>
+                        <li>Le délai de rétractation est de 15 jours calendaires après la signature de la convention.</li>
+                        <li>La DREETS dispose de 15 jours ouvrables pour valider la convention après son dépôt.</li>
+                        <li>Si la DREETS ne répond pas dans ce délai, l'homologation est considérée comme acquise.</li>
+                        <li>La sortie du salarié intervient le lendemain de l'homologation.</li>
+                    </ul>
+                </div>
+                <div class="mt-4">
+                    <a href="#" class="btn btn-primary" onclick="alert('Téléchargement du courrier de convocation')">Télécharger le courrier de convocation</a>
+                    <a href="#" class="btn btn-primary" onclick="alert('Téléchargement de la convention de rupture')">Télécharger la convention de rupture</a>
+                </div>
+            `;
+
+            resultDiv.innerHTML = result;
+            resultDiv.classList.remove('hidden');
+            resetButton.style.display = 'block';
+            form.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

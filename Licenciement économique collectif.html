@@ -1,0 +1,415 @@
+<html><head><base href="https://a.b"><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur pédagogique de procédure de licenciement économique collectif</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.3.0/luxon.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #bdc3c7;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .step {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .step-label {
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .conseil, .attention {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .conseil {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .attention {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">Simulateur pédagogique de procédure de licenciement économique collectif</h1>
+        <form id="licenciementForm" class="fade-in">
+            <div class="mb-3">
+                <label for="nombreLicenciements" class="form-label">Nombre de licenciements envisagés sur une période de 30 jours :</label>
+                <select id="nombreLicenciements" class="form-select" required>
+                    <option value="">Sélectionnez</option>
+                    <option value="2-9">De 2 à 9 salariés</option>
+                    <option value="10+">10 salariés ou plus</option>
+                </select>
+            </div>
+
+            <div id="effectifEntreprise" class="mb-3 hidden">
+                <label for="effectif" class="form-label">Effectif de l'entreprise :</label>
+                <select id="effectif" class="form-select">
+                    <option value="">Sélectionnez</option>
+                    <option value="moins50">Moins de 50 salariés</option>
+                    <option value="50+">50 salariés ou plus</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="cse" class="form-label">Présence d'un CSE dans l'entreprise :</label>
+                <select id="cse" class="form-select" required>
+                    <option value="">Sélectionnez</option>
+                    <option value="oui">Oui</option>
+                    <option value="non">Non</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="dateDebut" class="form-label">Date prévue de début de la procédure :</label>
+                <input type="date" id="dateDebut" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Simuler la procédure</button>
+        </form>
+
+        <div id="result" class="hidden fade-in"></div>
+        
+        <button id="resetButton" class="btn btn-primary mt-3" style="display: none;">Recommencer</button>
+    </div>
+
+    <script>
+        const DateTime = luxon.DateTime;
+        const form = document.getElementById('licenciementForm');
+        const resultDiv = document.getElementById('result');
+        const resetButton = document.getElementById('resetButton');
+        const nombreLicenciementsSelect = document.getElementById('nombreLicenciements');
+        const effectifEntrepriseDiv = document.getElementById('effectifEntreprise');
+        const effectifSelect = document.getElementById('effectif');
+
+        nombreLicenciementsSelect.addEventListener('change', function() {
+            if (this.value === '10+') {
+                effectifEntrepriseDiv.classList.remove('hidden');
+                effectifSelect.required = true;
+            } else {
+                effectifEntrepriseDiv.classList.add('hidden');
+                effectifSelect.required = false;
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            simulerProcedure();
+        });
+
+        resetButton.addEventListener('click', function() {
+            form.reset();
+            resultDiv.classList.add('hidden');
+            resultDiv.innerHTML = '';
+            resetButton.style.display = 'none';
+            form.style.display = 'block';
+            effectifEntrepriseDiv.classList.add('hidden');
+            effectifSelect.required = false;
+        });
+
+        function addWorkingDays(date, days) {
+            let result = date;
+            while (days > 0) {
+                result = result.plus({ days: 1 });
+                if (result.weekday <= 5) {
+                    days--;
+                }
+            }
+            return result;
+        }
+
+        function simulerProcedure() {
+            const nombreLicenciements = document.getElementById('nombreLicenciements').value;
+            const effectif = document.getElementById('effectif').value;
+            const cse = document.getElementById('cse').value;
+            const dateDebut = DateTime.fromISO(document.getElementById('dateDebut').value);
+
+            let result = '<h2>Procédure à suivre :</h2>';
+
+            if (nombreLicenciements === '2-9') {
+                result += procedure2a9(cse, dateDebut);
+            } else if (nombreLicenciements === '10+') {
+                if (effectif === 'moins50') {
+                    result += procedure10PlusMoins50(cse, dateDebut);
+                } else {
+                    result += procedure10Plus50Plus(cse, dateDebut);
+                }
+            }
+
+            result += `
+                <div class="step">
+                    <h3 class="step-label">Informations complémentaires</h3>
+                    <p>Cette simulation est fournie à titre indicatif et ne remplace pas un conseil juridique professionnel. La procédure de licenciement économique collectif est complexe et peut varier selon les spécificités de votre entreprise et de votre convention collective.</p>
+                    <p>Il est fortement recommandé de consulter un expert en droit du travail ou un avocat spécialisé pour vous assurer de respecter toutes les obligations légales et conventionnelles.</p>
+                    <p>N'oubliez pas que chaque étape de la procédure doit être soigneusement documentée. Conservez tous les documents relatifs à la procédure (convocations, comptes-rendus de réunions, notifications, etc.) pendant au moins 5 ans.</p>
+                    <div class="attention">
+                        <strong>Attention :</strong> Le non-respect de la procédure peut entraîner la nullité des licenciements et exposer l'entreprise à des sanctions.
+                    </div>
+                </div>
+                <div class="step">
+                    <h3 class="step-label">Ressources supplémentaires</h3>
+                    <p>Pour plus d'informations sur la procédure de licenciement économique collectif, vous pouvez consulter les ressources suivantes :</p>
+                    <ul>
+                        <li><a href="https://travail-emploi.gouv.fr/droit-du-travail/la-rupture-du-contrat-de-travail/article/le-licenciement-economique" target="_blank">Site du Ministère du Travail</a></li>
+                        <li><a href="https://www.service-public.fr/particuliers/vosdroits/F2776" target="_blank">Service-Public.fr - Licenciement économique</a></li>
+                    </ul>
+                </div>
+                <div class="step">
+                    <h3 class="step-label">Formulaire de demande d'assistance</h3>
+                    <p>Si vous avez besoin d'une assistance personnalisée pour votre procédure de licenciement économique collectif, nous vous invitons à remplir notre formulaire de demande d'assistance :</p>
+                    <a href="https://example.com/formulaire-assistance-licenciement" class="btn btn-primary">Accéder au formulaire d'assistance</a>
+                </div>
+            `;
+
+            resultDiv.innerHTML = result;
+            resultDiv.classList.remove('hidden');
+            resetButton.style.display = 'block';
+            form.style.display = 'none';
+        }
+
+        function procedure2a9(cse, dateDebut) {
+            let result = '';
+            if (cse === 'oui') {
+                result += `
+                    <div class="step">
+                        <h3 class="step-label">Étape 1 : Convoquer et informer le CSE</h3>
+                        <p>Date : ${dateDebut.toFormat('dd/MM/yyyy')}</p>
+                        <p>L'employeur doit convoquer les membres du CSE à une réunion d'information et de consultation. La convocation doit être accompagnée de tous les documents nécessaires à la compréhension du projet de licenciement.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Préparez un dossier complet comprenant les raisons économiques du licenciement, les critères de sélection des salariés concernés, et les mesures envisagées pour limiter les licenciements et faciliter le reclassement.
+                        </div>
+                    </div>
+                    <div class="step">
+                        <h3 class="step-label">Étape 2 : Consulter le CSE</h3>
+                        <p>Date : ${addWorkingDays(dateDebut, 3).toFormat('dd/MM/yyyy')} (au moins 3 jours ouvrables après la convocation)</p>
+                        <p>Lors de cette réunion, l'employeur présente le projet de licenciement et répond aux questions des membres du CSE. Le CSE rend un avis sur le projet.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Préparez-vous à répondre à toutes les questions du CSE. Prenez des notes détaillées de la réunion et rédigez un procès-verbal.
+                        </div>
+                    </div>
+                `;
+            } else {
+                result += `
+                    <div class="step">
+                        <h3 class="step-label">Absence de CSE</h3>
+                        <p>En l'absence de CSE, l'employeur doit s'assurer qu'il a bien rempli ses obligations en matière de mise en place des instances représentatives du personnel.</p>
+                        <div class="attention">
+                            <strong>Attention :</strong> L'absence de CSE doit être justifiée par un procès-verbal de carence. Si l'entreprise compte 11 salariés ou plus, elle doit organiser des élections professionnelles.
+                        </div>
+                    </div>
+                `;
+            }
+            result += `
+                <div class="step">
+                    <h3 class="step-label">Étape 3 : Informer l'administration (DREETS)</h3>
+                    <p>Date limite : ${addWorkingDays(dateDebut, 8).toFormat('dd/MM/yyyy')} (dans les 8 jours suivant l'envoi des lettres de licenciement)</p>
+                    <p>L'employeur doit informer la DREETS (Direction régionale de l'économie, de l'emploi, du travail et des solidarités) du projet de licenciement.</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> Utilisez le formulaire cerfa n°14505 pour cette notification. Incluez tous les documents pertinents, notamment le procès-verbal de la réunion du CSE s'il existe.
+                    </div>
+                </div>
+                <div class="step">
+                    <h3 class="step-label">Étape 4 : Notifier les licenciements aux salariés</h3>
+                    <p>À partir du : ${addWorkingDays(dateDebut, 7).toFormat('dd/MM/yyyy')} (7 jours après le début de la procédure)</p>
+                    <p>L'employeur peut commencer à envoyer les lettres de licenciement aux salariés concernés. Chaque lettre doit être personnalisée et mentionner les motifs économiques du licenciement.</p>
+                    <div class="attention">
+                        <strong>Attention :</strong> La lettre de licenciement doit être envoyée en recommandé avec accusé de réception. Elle doit mentionner la possibilité pour le salarié de bénéficier d'une priorité de réembauche et le délai pour en faire la demande.
+                    </div>
+                </div>
+            `;
+            return result;
+        }
+
+        function procedure10PlusMoins50(cse, dateDebut) {
+            let result = '';
+            if (cse === 'oui') {
+                result += `
+                    <div class="step">
+                        <h3 class="step-label">Étape 1 : Convoquer et informer le CSE</h3>
+                        <p>Date : ${dateDebut.toFormat('dd/MM/yyyy')}</p>
+                        <p>L'employeur doit convoquer les membres du CSE à une première réunion d'information et de consultation. La convocation doit être accompagnée de tous les documents nécessaires à la compréhension du projet de licenciement.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Préparez un dossier complet comprenant les raisons économiques du licenciement, les critères de sélection des salariés concernés, et les mesures envisagées pour limiter les licenciements et faciliter le reclassement.
+                        </div>
+                    </div>
+                    <div class="step">
+                        <h3 class="step-label">Étape 2 : Première réunion du CSE</h3>
+                        <p>Date : ${addWorkingDays(dateDebut, 3).toFormat('dd/MM/yyyy')} (au moins 3 jours ouvrables après la convocation)</p>
+                        <p>Lors de cette réunion, l'employeur présente le projet de licenciement et répond aux questions des membres du CSE.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Soyez prêt à fournir des explications détaillées sur les raisons économiques et les mesures envisagées. Prenez des notes détaillées de la réunion.
+                        </div>
+                    </div>
+                    <div class="step">
+                        <h3 class="step-label">Étape 3 : Deuxième réunion du CSE</h3>
+                        <p>Date : ${addWorkingDays(dateDebut, 17).toFormat('dd/MM/yyyy')} (14 jours calendaires maximum après la première réunion)</p>
+                        <p>Lors de cette réunion, le CSE rend son avis sur le projet de licenciement. L'employeur doit répondre de manière motivée aux propositions du CSE.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Préparez des réponses argumentées aux propositions alternatives du CSE. Rédigez un procès-verbal détaillé de la réunion.
+                        </div>
+                    </div>
+                `;
+            } else {
+                result += `
+                    <div class="step">
+                        <h3 class="step-label">Absence de CSE</h3>
+                        <p>En l'absence de CSE, l'employeur doit s'assurer qu'il a bien rempli ses obligations en matière de mise en place des instances représentatives du personnel.</p>
+                        <div class="attention">
+                            <strong>Attention :</strong> L'absence de CSE doit être justifiée par un procès-verbal de carence. Pour une entreprise de moins de 50 salariés, elle doit organiser des élections professionnelles.
+                        </div>
+                    </div>
+                `;
+            }
+            result += `
+                <div class="step">
+                    <h3 class="step-label">Étape 4 : Notifier le projet de licenciement à l'administration (DREETS)</h3>
+                    <p>Date : ${addWorkingDays(dateDebut, 1).toFormat('dd/MM/yyyy')} (au plus tôt le lendemain de la première réunion du CSE)</p>
+                    <p>L'employeur doit notifier à la DREETS le projet de licenciement collectif. Cette notification doit inclure tous les documents transmis au CSE.</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> Utilisez le formulaire cerfa n°14505 pour cette notification. Incluez le procès-verbal des réunions du CSE et tous les documents pertinents.
+                    </div>
+                </div>
+                <div class="step">
+                    <h3 class="step-label">Étape 5 : Notifier les licenciements aux salariés</h3>
+                    <p>À partir du : ${addWorkingDays(dateDebut, 31).toFormat('dd/MM/yyyy')} (30 jours après la notification à l'administration)</p>
+                    <p>L'employeur peut commencer à envoyer les lettres de licenciement aux salariés concernés. Chaque lettre doit être personnalisée et mentionner les motifs économiques du licenciement.</p>
+                    <div class="attention">
+                        <strong>Attention :</strong> La lettre de licenciement doit être envoyée en recommandé avec accusé de réception. Elle doit mentionner la possibilité pour le salarié de bénéficier d'une priorité de réembauche et le délai pour en faire la demande.
+                    </div>
+                </div>
+            `;
+            return result;
+        }
+
+        function procedure10Plus50Plus(cse, dateDebut) {
+            let result = '';
+            if (cse === 'oui') {
+                result += `
+                    <div class="step">
+                        <h3 class="step-label">Étape 1 : Convoquer et informer le CSE</h3>
+                        <p>Date : ${dateDebut.toFormat('dd/MM/yyyy')}</p>
+                        <p>L'employeur doit convoquer les membres du CSE à une première réunion d'information et de consultation. La convocation doit être accompagnée de tous les documents nécessaires à la compréhension du projet de licenciement et du Plan de Sauvegarde de l'Emploi (PSE).</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Préparez un dossier complet comprenant les raisons économiques du licenciement, les critères de sélection des salariés concernés, et le projet de PSE.
+                        </div>
+                    </div>
+                    <div class="step">
+                        <h3 class="step-label">Étape 2 : Première réunion du CSE</h3>
+                        <p>Date : ${addWorkingDays(dateDebut, 3).toFormat('dd/MM/yyyy')} (au moins 3 jours ouvrables après la convocation)</p>
+                        <p>Lors de cette réunion, l'employeur présente le projet de licenciement, le PSE et répond aux questions des membres du CSE.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Soyez prêt à fournir des explications détaillées sur les raisons économiques et les mesures du PSE. Prenez des notes détaillées de la réunion.
+                        </div>
+                    </div>
+                    <div class="step">
+                        <h3 class="step-label">Étape 3 : Deuxième réunion du CSE</h3>
+                        <p>Date : ${addWorkingDays(dateDebut, 18).toFormat('dd/MM/yyyy')} (15 jours calendaires minimum après la première réunion)</p>
+                        <p>Lors de cette réunion, le CSE peut faire des propositions alternatives au projet présenté. L'employeur doit y répondre de manière motivée.</p>
+                        <div class="conseil">
+                            <strong>Conseil :</strong> Préparez des réponses argumentées aux propositions alternatives du CSE. Continuez à affiner le PSE en fonction des discussions.
+                        </div>
+                    </div>
+                `;
+            } else {
+                result += `
+                    <div class="step">
+                        <h3 class="step-label">Absence de CSE</h3>
+                        <p>En l'absence de CSE, l'employeur doit s'assurer qu'il a bien rempli ses obligations en matière de mise en place des instances représentatives du personnel.</p>
+                        <div class="attention">
+                            <strong>Attention :</strong> L'absence de CSE dans une entreprise de 50 salariés ou plus est une situation exceptionnelle qui doit être justifiée. Assurez-vous d'avoir organisé les élections professionnelles et de disposer d'un procès-verbal de carence si nécessaire.
+                        </div>
+                    </div>
+                `;
+            }
+            result += `
+                <div class="step">
+                    <h3 class="step-label">Étape 4 : Élaborer un Plan de Sauvegarde de l'Emploi (PSE)</h3>
+                    <p>Le PSE doit être élaboré et finalisé au cours de la procédure de consultation du CSE. Il doit contenir des mesures concrètes et précises pour éviter les licenciements ou en limiter le nombre, et pour faciliter le reclassement des salariés.</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> Incluez dans le PSE des mesures telles que des actions de formation, de validation des acquis de l'expérience, de reclassement interne et externe, de soutien à la création d'entreprise, etc.
+                    </div>
+                </div>
+                <div class="step">
+                    <h3 class="step-label">Étape 5 : Notifier le projet de licenciement à l'administration (DREETS)</h3>
+                    <p>Date : ${addWorkingDays(dateDebut, 1).toFormat('dd/MM/yyyy')} (au plus tôt le lendemain de la première réunion du CSE)</p>
+                    <p>L'employeur doit notifier à la DREETS le projet de licenciement collectif et le PSE. Cette notification doit inclure tous les documents transmis au CSE.</p>
+                    <div class="conseil">
+                        <strong>Conseil :</strong> Assurez-vous que le dossier transmis à la DREETS est complet. Il doit inclure le projet de licenciement, le PSE, les procès-verbaux des réunions du CSE, et tous les documents pertinents.
+                    </div>
+                </div>
+                <div class="step">
+                    <h3 class="step-label">Étape 6 : Validation ou homologation du PSE par la DREETS</h3>
+                    <p>La DREETS a 21 jours pour valider un accord majoritaire sur le PSE ou 21 jours pour homologuer un document unilatéral de l'employeur.</p>
+                    <div class="attention">
+                        <strong>Attention :</strong> Les licenciements ne peuvent être notifiés qu'après la décision de validation ou d'homologation de la DREETS. En l'absence de réponse dans le délai imparti, le PSE est réputé validé ou homologué.
+                    </div>
+                </div>
+                <div class="step">
+                    <h3 class="step-label">Étape 7 : Notifier les licenciements aux salariés</h3>
+                    <p>À partir du : Après la validation ou l'homologation du PSE par la DREETS</p>
+                    <p>L'employeur peut commencer à envoyer les lettres de licenciement aux salariés concernés. Chaque lettre doit être personnalisée et mentionner les motifs économiques du licenciement ainsi que les mesures du PSE dont le salarié peut bénéficier.</p>
+                    <div class="attention">
+                        <strong>Attention :</strong> La lettre de licenciement doit être envoyée en recommandé avec accusé de réception. Elle doit mentionner la possibilité pour le salarié de bénéficier d'une priorité de réembauche et le délai pour en faire la demande.
+                    </div>
+                </div>
+            `;
+            return result;
+        }
+    </script>
+</body></html>

@@ -1,0 +1,408 @@
+<html><head><base href="https://websim.example.com/payslip-simulator-2024/"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Simulateur de Bulletin de Paie 2024 - Amélioré</title><style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f4f8;
+    color: #333;
+}
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+}
+h1, h2 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+.input-section {
+    width: 30%;
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 8px;
+}
+.output-section {
+    width: 68%;
+}
+label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+    color: #34495e;
+}
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+input:focus, select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 14px;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+th {
+    background-color: #3498db;
+    color: white;
+}
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+.summary {
+    background-color: #e8f6f3;
+    border: 1px solid #1abc9c;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+.summary h3 {
+    color: #16a085;
+    margin-top: 0;
+}
+.summary p {
+    margin: 5px 0;
+}
+.brut-total {
+    background-color: #d4e6f1;
+    font-weight: bold;
+}
+.charges-total {
+    background-color: #f9e79f;
+    font-weight: bold;
+}
+.net-a-payer {
+    font-weight: bold;
+}
+.button-container {
+    text-align: center;
+    margin-top: 20px;
+}
+.reset-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.reset-button:hover {
+    background-color: #c0392b;
+}
+</style></head><body>
+<div class="container">
+    <div class="input-section">
+        <h2>Saisie des données</h2>
+        <label for="typeSalaire">Type de salaire:</label>
+        <select id="typeSalaire">
+            <option value="horaire">Salaire horaire</option>
+            <option value="mensuel">Salaire mensuel</option>
+        </select>
+        
+        <label for="salaire">Salaire (€):</label>
+        <input type="number" id="salaire" step="0.01">
+        
+        <label for="heuresHebdo">Nombre d'heures par semaine:</label>
+        <input type="number" id="heuresHebdo">
+        
+        <label for="primes">Primes et indemnités (€):</label>
+        <input type="number" id="primes" step="0.01">
+        
+        <label for="fraisPro">Frais professionnels (€):</label>
+        <input type="number" id="fraisPro" step="0.01">
+        
+        <label for="statut">Statut catégoriel:</label>
+        <select id="statut">
+            <option value="cadre">Cadre</option>
+            <option value="nonCadre">Non-cadre</option>
+        </select>
+        
+        <label for="effectif">Effectif de l'entreprise:</label>
+        <input type="number" id="effectif">
+        
+        <label for="tauxATMP">Taux AT/MP (%):</label>
+        <input type="number" id="tauxATMP" step="0.01" value="1">
+        
+        <label for="tauxVersementMobilite">Taux versement mobilité (%):</label>
+        <input type="number" id="tauxVersementMobilite" step="0.01" value="0">
+        
+        <label for="tauxPrelevement">Taux de prélèvement à la source (%):</label>
+        <input type="number" id="tauxPrelevement" step="0.01">
+        
+        <div class="button-container">
+            <button id="resetButton" class="reset-button">Réinitialiser le calcul</button>
+        </div>
+    </div>
+    
+    <div class="output-section">
+        <h2>Bulletin de Paie Simulé 2024</h2>
+        <table id="bulletinPaie">
+            <tr>
+                <th>Désignation</th>
+                <th>Base</th>
+                <th>Taux salarial</th>
+                <th>Montant salarial</th>
+                <th>Taux patronal</th>
+                <th>Montant patronal</th>
+            </tr>
+        </table>
+        
+        <div class="summary" id="summary">
+            <h3>Récapitulatif</h3>
+            <!-- Les informations importantes seront ajoutées ici par JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', calculatePayslip);
+    });
+
+    document.getElementById('resetButton').addEventListener('click', resetCalculator);
+});
+
+function resetCalculator() {
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        if (input.type === 'number') {
+            input.value = '';
+        } else if (input.type === 'select-one') {
+            input.selectedIndex = 0;
+        }
+    });
+    
+    // Réinitialiser les valeurs par défaut spécifiques
+    document.getElementById('tauxATMP').value = '1';
+    document.getElementById('tauxVersementMobilite').value = '0';
+
+    // Effacer le bulletin et le récapitulatif
+    document.getElementById('bulletinPaie').innerHTML = '<tr><th>Désignation</th><th>Base</th><th>Taux salarial</th><th>Montant salarial</th><th>Taux patronal</th><th>Montant patronal</th></tr>';
+    document.getElementById('summary').innerHTML = '<h3>Récapitulatif</h3>';
+}
+
+function calculatePayslip() {
+    const typeSalaire = document.getElementById('typeSalaire').value;
+    const salaireInput = parseFloat(document.getElementById('salaire').value) || 0;
+    const heuresHebdo = parseFloat(document.getElementById('heuresHebdo').value) || 0;
+    const primes = parseFloat(document.getElementById('primes').value) || 0;
+    const fraisPro = parseFloat(document.getElementById('fraisPro').value) || 0;
+    const statut = document.getElementById('statut').value;
+    const effectif = parseInt(document.getElementById('effectif').value) || 0;
+    const tauxATMP = parseFloat(document.getElementById('tauxATMP').value) / 100 || 0.01;
+    const tauxVersementMobilite = effectif > 11 ? (parseFloat(document.getElementById('tauxVersementMobilite').value) / 100 || 0) : 0;
+    const tauxPrelevement = parseFloat(document.getElementById('tauxPrelevement').value) / 100 || 0;
+
+    const PSS = 3864; // Plafond Mensuel de la Sécurité Sociale 2024
+    const SMIC_HORAIRE = 11.65; // SMIC horaire 2024
+    const SMIC_MENSUEL = SMIC_HORAIRE * 35 * 52 / 12; // SMIC mensuel 2024
+
+    // Proratisation du PSS pour temps partiel
+    const coefficientProrataPSS = Math.min(heuresHebdo / 35, 1);
+    const PSS_prorataTempsPartiel = PSS * coefficientProrataPSS;
+
+    // Calcul des heures supplémentaires
+    const heuresMensuelles = heuresHebdo * 52 / 12;
+    const heuresNormalesMensuelles = Math.min(151.67, heuresMensuelles);
+    const heuresSupp25Mensuelles = Math.min(34.67, Math.max(0, heuresMensuelles - 151.67)); // De 35h à 43h par semaine
+    const heuresSupp50Mensuelles = Math.max(0, heuresMensuelles - 151.67 - 34.67); // Au-delà de 43h par semaine
+
+    // Calcul du taux horaire et du salaire de base total
+    let tauxHoraire, salaireBaseTotal;
+    if (typeSalaire === 'horaire') {
+        tauxHoraire = salaireInput;
+        salaireBaseTotal = tauxHoraire * heuresMensuelles;
+    } else {
+        salaireBaseTotal = salaireInput;
+        tauxHoraire = salaireBaseTotal / heuresMensuelles;
+    }
+
+    // Calculs détaillés du salaire brut
+    const salaireBase = tauxHoraire * heuresNormalesMensuelles;
+    const majorationHeuresSupp25 = tauxHoraire * 0.25 * heuresSupp25Mensuelles;
+    const majorationHeuresSupp50 = tauxHoraire * 0.50 * heuresSupp50Mensuelles;
+    const totalBrut = salaireBaseTotal + primes;
+
+    // Cotisations 2024
+    const cotisations = [
+        {name: "Maladie maternité invalidité décès", base: totalBrut, tauxSalarial: 0, tauxPatronal: totalBrut <= 2.5 * SMIC_MENSUEL ? 0.07 : 0.13},
+        {name: "Assurance vieillesse déplafonnée", base: totalBrut, tauxSalarial: 0.004, tauxPatronal: 0.0202},
+        {name: "Assurance vieillesse plafonnée", base: Math.min(totalBrut, PSS_prorataTempsPartiel), tauxSalarial: 0.069, tauxPatronal: 0.0855},
+        {name: "Allocations familiales", base: totalBrut, tauxSalarial: 0, tauxPatronal: totalBrut <= 3.5 * SMIC_MENSUEL ? 0.0345 : 0.0525},
+        {name: "Accident du travail", base: totalBrut, tauxSalarial: 0, tauxPatronal: tauxATMP},
+        {name: "FNAL", base: effectif >= 50 ? totalBrut : Math.min(totalBrut, PSS_prorataTempsPartiel), tauxSalarial: 0, tauxPatronal: effectif >= 50 ? 0.005 : 0.001},
+        {name: "Contribution solidarité autonomie", base: totalBrut, tauxSalarial: 0, tauxPatronal: 0.003},
+        {name: "Assurance chômage", base: Math.min(totalBrut, 4 * PSS_prorataTempsPartiel), tauxSalarial: 0, tauxPatronal: 0.0405},
+        {name: "AGS", base: Math.min(totalBrut, 4 * PSS_prorataTempsPartiel), tauxSalarial: 0, tauxPatronal: 0.002},
+        {name: "AGIRC-ARRCO Tranche 1", base: Math.min(totalBrut, PSS_prorataTempsPartiel), tauxSalarial: 0.0315, tauxPatronal: 0.0472},
+        {name: "AGIRC-ARRCO Tranche 2", base: Math.max(0, Math.min(totalBrut, 8 * PSS_prorataTempsPartiel) - PSS_prorataTempsPartiel), tauxSalarial: 0.0864, tauxPatronal: 0.1295},
+        {name: "CEG Tranche 1", base: Math.min(totalBrut, PSS_prorataTempsPartiel), tauxSalarial: 0.0086, tauxPatronal: 0.0129},
+        {name: "CEG Tranche 2", base: Math.max(0, Math.min(totalBrut, 8 * PSS_prorataTempsPartiel) - PSS_prorataTempsPartiel), tauxSalarial: 0.0108, tauxPatronal: 0.0162},
+        {name: "CET", base: totalBrut > PSS_prorataTempsPartiel ? Math.min(totalBrut, 8 * PSS_prorataTempsPartiel) : 0, tauxSalarial: 0.0014, tauxPatronal: 0.0021},
+        {name: "APEC", base: statut === 'cadre' ? Math.min(totalBrut, 4 * PSS_prorataTempsPartiel) : 0, tauxSalarial: 0.00024, tauxPatronal: 0.00036},
+        {name: "Contribution dialogue social", base: totalBrut, tauxSalarial: 0, tauxPatronal: 0.00016},
+        {name: "Versement mobilité", base: totalBrut, tauxSalarial: 0, tauxPatronal: tauxVersementMobilite},
+        {name: "CSG déductible", base: totalBrut * 0.9825, tauxSalarial: 0.068, tauxPatronal: 0},
+        {name: "CSG/CRDS non déductible", base: totalBrut * 0.9825, tauxSalarial: 0.029, tauxPatronal: 0}
+    ];
+
+    // Ajout de la prévoyance cadre si applicable
+    if (statut === 'cadre') {
+        cotisations.push({name: "Prévoyance cadre", base: PSS_prorataTempsPartiel, tauxSalarial: 0, tauxPatronal: 0.015});
+    }
+
+    let totalCotisationsSalariales = 0;
+    let totalCotisationsPatronales = 0;
+    let montantPrevoyanceCadre = 0;
+
+    const bulletinTable = document.getElementById('bulletinPaie');
+    bulletinTable.innerHTML = '<tr><th>Désignation</th><th>Base</th><th>Taux salarial</th><th>Montant salarial</th><th>Taux patronal</th><th>Montant patronal</th></tr>';
+
+    // Détails du salaire brut
+    addRowToBulletin("Salaire de base", `${heuresNormalesMensuelles.toFixed(2)} h`, "-", salaireBase.toFixed(2), "-", "-");
+    if (heuresSupp25Mensuelles > 0) {
+        addRowToBulletin("Heures supplémentaires 25%", `${heuresSupp25Mensuelles.toFixed(2)} h`, "25%", (tauxHoraire * heuresSupp25Mensuelles * 1.25).toFixed(2), "-", "-");
+    }
+    if (heuresSupp50Mensuelles > 0) {
+        addRowToBulletin("Heures supplémentaires 50%", `${heuresSupp50Mensuelles.toFixed(2)} h`, "50%", (tauxHoraire * heuresSupp50Mensuelles * 1.50).toFixed(2), "-", "-");
+    }
+    addRowToBulletin("Salaire de base total", "-", "-", salaireBaseTotal.toFixed(2), "-", "-", "brut-total");
+    if (primes > 0) {
+        addRowToBulletin("Primes et indemnités", "-", "-", primes.toFixed(2), "-", "-");
+    }
+    addRowToBulletin("Total Brut", "-", "-", totalBrut.toFixed(2), "-", "-", "brut-total");
+
+    // Cotisations
+    cotisations.forEach(cot => {
+        const montantSalarial = cot.base * cot.tauxSalarial;
+        const montantPatronal = cot.base * cot.tauxPatronal;
+        totalCotisationsSalariales += montantSalarial;
+        totalCotisationsPatronales += montantPatronal;
+        
+        if (cot.name === "Prévoyance cadre") {
+            montantPrevoyanceCadre = montantPatronal;
+        }
+        
+        addRowToBulletin(
+            cot.name,
+            cot.base.toFixed(2),
+            (cot.tauxSalarial * 100).toFixed(3) + "%",
+            montantSalarial.toFixed(2),
+            (cot.tauxPatronal * 100).toFixed(3) + "%",
+            montantPatronal.toFixed(2)
+        );
+    });
+
+    // Calcul de la réduction générale (Fillon)
+    const T = effectif < 50 ? 0.3194 : 0.3234;
+    const reductionFillon = Math.max(0, (T / 0.6) * ((1.6 * SMIC_MENSUEL / totalBrut) - 1) * totalBrut);
+    
+    // Ajout de la réduction Fillon au bulletin
+    addRowToBulletin("Réduction générale des cotisations patronales (Fillon)", totalBrut.toFixed(2), "-", "-", "-", (-reductionFillon).toFixed(2));
+    totalCotisationsPatronales -= reductionFillon;
+
+    // Réduction salariale des heures supplémentaires
+    const reductionSalarialeHS = (majorationHeuresSupp25 + majorationHeuresSupp50) * 0.1131;
+    addRowToBulletin("Réduction salariale heures supplémentaires", (majorationHeuresSupp25 + majorationHeuresSupp50).toFixed(2), "11.31%", (-reductionSalarialeHS).toFixed(2), "-", "-");
+    totalCotisationsSalariales -= reductionSalarialeHS;
+
+    // Réduction patronale des heures supplémentaires
+    let tauxReductionPatronaleHS = 0;
+    if (effectif < 20) {
+        tauxReductionPatronaleHS = 1.5;
+    } else if (effectif >= 20 && effectif <= 250) {
+        tauxReductionPatronaleHS = 0.5;
+    }
+    const reductionPatronaleHS = (heuresSupp25Mensuelles + heuresSupp50Mensuelles) * tauxReductionPatronaleHS;
+    if (tauxReductionPatronaleHS > 0) {
+        addRowToBulletin("Déduction forfaitaire patronale heures supplémentaires", (heuresSupp25Mensuelles + heuresSupp50Mensuelles).toFixed(2), "-", "-", tauxReductionPatronaleHS.toFixed(2) + "€/h", (-reductionPatronaleHS).toFixed(2));
+        totalCotisationsPatronales -= reductionPatronaleHS;
+    }
+
+    // Forfait social
+    if (effectif > 11 && montantPrevoyanceCadre > 0) {
+        const forfaitSocial = montantPrevoyanceCadre * 0.08;
+        addRowToBulletin("Forfait social", montantPrevoyanceCadre.toFixed(2), "-", "-", "8%", forfaitSocial.toFixed(2));
+        totalCotisationsPatronales += forfaitSocial;
+    }
+
+    // Total des cotisations
+    addRowToBulletin("Total des cotisations", "-", "-", totalCotisationsSalariales.toFixed(2), "-", totalCotisationsPatronales.toFixed(2), "charges-total");
+
+    // Net imposable
+    const netImposable = totalBrut - totalCotisationsSalariales;
+    addRowToBulletin("Net imposable", "-", "-", netImposable.toFixed(2), "-", "-");
+
+    // Frais professionnels
+    if (fraisPro > 0) {
+        addRowToBulletin("Frais professionnels", "-", "-", fraisPro.toFixed(2), "-", "-");
+    }
+
+    // Prélèvement à la source
+    const prelevementSource = netImposable * tauxPrelevement;
+    addRowToBulletin("Prélèvement à la source", netImposable.toFixed(2), (tauxPrelevement * 100).toFixed(2) + "%", prelevementSource.toFixed(2), "-", "-");
+
+    // Net à payer
+    const netAPayer = netImposable - prelevementSource + fraisPro;
+    addRowToBulletin("Net à payer", "-", "-", netAPayer.toFixed(2), "-", "-", "net-a-payer");
+
+    // Coût total employeur
+    const coutTotalEmployeur = totalBrut + totalCotisationsPatronales;
+    addRowToBulletin("Coût total employeur", "-", "-", "-", "-", coutTotalEmployeur.toFixed(2));
+
+    // Mise à jour du récapitulatif
+    updateSummary(totalBrut, totalCotisationsSalariales, totalCotisationsPatronales, netAPayer, coutTotalEmployeur);
+}
+
+function addRowToBulletin(designation, base, tauxSalarial, montantSalarial, tauxPatronal, montantPatronal, className = '') {
+    const bulletinTable = document.getElementById('bulletinPaie');
+    const row = bulletinTable.insertRow(-1);
+    if (className) {
+        row.className = className;
+    }
+    row.insertCell(0).textContent = designation;
+    row.insertCell(1).textContent = base;
+    row.insertCell(2).textContent = tauxSalarial;
+    row.insertCell(3).textContent = montantSalarial;
+    row.insertCell(4).textContent = tauxPatronal;
+    row.insertCell(5).textContent = montantPatronal;
+}
+
+function updateSummary(totalBrut, totalCotisationsSalariales, totalCotisationsPatronales, netAPayer, coutTotalEmployeur) {
+    const summary = document.getElementById('summary');
+    summary.innerHTML = `
+        <h3>Récapitulatif</h3>
+        <p><strong>Salaire Brut:</strong> ${totalBrut.toFixed(2)} €</p>
+        <p><strong>Total Cotisations Salariales:</strong> ${totalCotisationsSalariales.toFixed(2)} €</p>
+        <p><strong>Total Cotisations Patronales:</strong> ${totalCotisationsPatronales.toFixed(2)} €</p>
+        <p><strong>Net à Payer:</strong> ${netAPayer.toFixed(2)} €</p>
+        <p><strong>Coût Total Employeur:</strong> ${coutTotalEmployeur.toFixed(2)} €</p>
+    `;
+}
+</script>
+</body></html>

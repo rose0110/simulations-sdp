@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur de saisie-arrêt sur salaire</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            padding: 20px; 
+            background-color: #f0f0f0;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #333;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        label { 
+            display: block; 
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="checkbox"] { 
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        button { 
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .info {
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            margin-bottom: 15px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulateur de saisie-arrêt sur salaire</h1>
+        <div class="info">
+            <p><strong>Quel salaire net indiquer ?</strong></p>
+            <p>Saisissez le salaire mensuel net avant impôt sur le revenu. Il comprend :</p>
+            <ul>
+                <li>Le salaire de base</li>
+                <li>Les primes et indemnités régulières</li>
+                <li>Les avantages en nature</li>
+            </ul>
+            <p>N'incluez pas les remboursements de frais ou les allocations pour charge de famille.</p>
+        </div>
+        <form id="saisieForm">
+            <label for="salaire">Salaire mensuel net avant impôt :</label>
+            <input type="number" id="salaire" required step="0.01" min="0" placeholder="Ex: 2000">
+            
+            <label for="personnes">Nombre de personnes à charge :</label>
+            <input type="number" id="personnes" value="0" min="0">
+            
+            <label>
+                <input type="checkbox" id="pensionAlimentaire">
+                S'agit-il d'un impayé de pension alimentaire ?
+            </label>
+            
+            <button type="submit">Calculer</button>
+        </form>
+    </div>
+
+    <script>
+        const SBI = 635.71;
+        const tranches = [
+            { limite: 4370, taux: 0.05 },
+            { limite: 8520, taux: 0.1 },
+            { limite: 12690, taux: 0.2 },
+            { limite: 16820, taux: 0.25 },
+            { limite: 20970, taux: 1/3 },
+            { limite: 25200, taux: 2/3 },
+            { limite: Infinity, taux: 1 }
+        ];
+
+        document.getElementById('saisieForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculerSaisie();
+        });
+
+        function calculerSaisie() {
+            const salaireMensuel = parseFloat(document.getElementById('salaire').value);
+            const personnesACharge = parseInt(document.getElementById('personnes').value);
+            const estPensionAlimentaire = document.getElementById('pensionAlimentaire').checked;
+
+            const salaireAnnuel = salaireMensuel * 12;
+            const majorationPersonnesACharge = personnesACharge * 1690;
+            let montantSaisissable = 0;
+            let detailCalcul = [];
+
+            if (estPensionAlimentaire) {
+                montantSaisissable = Math.max(salaireAnnuel - (SBI * 12), 0);
+                detailCalcul.push({
+                    tranche: "Totalité du salaire",
+                    taux: "100%",
+                    montantSaisi: montantSaisissable.toFixed(2)
+                });
+            } else {
+                let salaireRestant = salaireAnnuel;
+                let seuilPrecedent = 0;
+
+                for (let tranche of tranches) {
+                    const plafondMajore = tranche.limite + majorationPersonnesACharge;
+                    if (salaireRestant > 0) {
+                        const montantTranche = Math.min(salaireRestant, plafondMajore - seuilPrecedent);
+                        const montantSaisiTranche = montantTranche * tranche.taux;
+                        montantSaisissable += montantSaisiTranche;
+
+                        detailCalcul.push({
+                            tranche: `${seuilPrecedent.toFixed(2)} - ${tranche.limite === Infinity ? 'au-delà' : plafondMajore.toFixed(2)}`,
+                            taux: `${(tranche.taux * 100).toFixed(1)}%`,
+                            montantSaisi: montantSaisiTranche.toFixed(2)
+                        });
+
+                        salaireRestant -= montantTranche;
+                        seuilPrecedent = plafondMajore;
+                    }
+                }
+            }
+
+            const montantSaisissableMensuel = montantSaisissable / 12;
+            const montantInsaisissableMensuel = Math.max(salaireMensuel - montantSaisissableMensuel, SBI);
+
+            afficherResultats(montantSaisissable, montantSaisissableMensuel, montantInsaisissableMensuel, detailCalcul, salaireMensuel, personnesACharge, estPensionAlimentaire);
+        }
+
+        function afficherResultats(montantSaisissableAnnuel, montantSaisissableMensuel, montantInsaisissableMensuel, detailCalcul, salaireMensuel, personnesACharge, estPensionAlimentaire) {
+            let resultatHTML = `
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Résultats de la saisie-arrêt sur salaire</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            line-height: 1.6; 
+                            padding: 20px; 
+                            background-color: #f0f0f0;
+                        }
+                        .container { 
+                            max-width: 800px; 
+                            margin: 0 auto; 
+                            background-color: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                        }
+                        h1, h2 { 
+                            color: #333;
+                        }
+                        table { 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            margin-top: 20px; 
+                        }
+                        th, td { 
+                            border: 1px solid #ddd; 
+                            padding: 12px; 
+                            text-align: left; 
+                        }
+                        th { 
+                            background-color: #f2f2f2; 
+                        }
+                        .info {
+                            background-color: #e7f3fe;
+                            border-left: 6px solid #2196F3;
+                            margin-bottom: 15px;
+                            padding: 10px;
+                        }
+                        button { 
+                            background-color: #4CAF50;
+                            color: white;
+                            padding: 10px 15px;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 16px;
+                            margin-top: 20px;
+                        }
+                        button:hover {
+                            background-color: #45a049;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>Résultats de la saisie-arrêt sur salaire</h1>
+                        <div class="info">
+                            <p><strong>Données saisies :</strong></p>
+                            <p>Salaire mensuel net : ${salaireMensuel.toFixed(2)} €</p>
+                            <p>Nombre de personnes à charge : ${personnesACharge}</p>
+                            <p>Impayé de pension alimentaire : ${estPensionAlimentaire ? 'Oui' : 'Non'}</p>
+                        </div>
+                        <h2>Résultats :</h2>
+                        <p>Montant saisissable annuel : <strong>${montantSaisissableAnnuel.toFixed(2)} €</strong></p>
+                        <p>Montant saisissable mensuel : <strong>${montantSaisissableMensuel.toFixed(2)} €</strong></p>
+                        <p>Montant insaisissable mensuel : <strong>${montantInsaisissableMensuel.toFixed(2)} €</strong></p>
+                        
+                        <h2>Détail du calcul :</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tranche (en €)</th>
+                                    <th>Taux</th>
+                                    <th>Montant saisi (en €)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${detailCalcul.map(detail => `
+                                    <tr>
+                                        <td>${detail.tranche}</td>
+                                        <td>${detail.taux}</td>
+                                        <td>${detail.montantSaisi}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <button onclick="window.close();">Recommencer</button>
+                    </div>
+                    <script>
+                        document.querySelector('button').addEventListener('click', function() {
+                            window.opener.location.reload();
+                            window.close();
+                        });
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            const resultatWindow = window.open('', '_blank');
+            resultatWindow.document.write(resultatHTML);
+            resultatWindow.document.close();
+        }
+    </script>
+</body>
+</html>

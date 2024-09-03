@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur dynamique de l'ARE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+        }
+        label {
+            font-weight: bold;
+            color: #34495e;
+        }
+        input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #result, #sjr-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+        }
+        .degressivite-info {
+            background-color: #e8f6fc;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .remunerations-list {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .remunerations-list h3 {
+            margin-bottom: 0.5rem;
+        }
+        .remunerations-list ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .remunerations-list li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .remunerations-list li::before {
+            content: "✓";
+            color: #2ecc71;
+            position: absolute;
+            left: 0;
+        }
+        .remunerations-list li.not-included::before {
+            content: "✗";
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8 bg-white shadow-lg rounded-lg">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-600">Simulateur dynamique de l'ARE</h1>
+        <form id="are-form" class="space-y-4">
+            <div>
+                <label for="age" class="block mb-2">Votre âge :</label>
+                <input type="number" id="age" name="age" required min="16" max="100" class="w-full px-3 py-2 border rounded-md">
+            </div>
+            <div id="salaire-input" class="hidden">
+                <label for="salaire" class="block mb-2">Salaire total brut sur <span id="periode"></span> :</label>
+                <input type="number" id="salaire" name="salaire" required min="0" step="0.01" class="w-full px-3 py-2 border rounded-md">
+            </div>
+            <div id="date-fin-input" class="hidden">
+                <label for="date-fin" class="block mb-2">Date de fin du dernier contrat de travail :</label>
+                <input type="date" id="date-fin" name="date-fin" required class="w-full px-3 py-2 border rounded-md">
+            </div>
+            <div class="flex justify-between space-x-4">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition">Calculer</button>
+                <button type="reset" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition">Réinitialiser</button>
+            </div>
+        </form>
+        <div id="sjr-info" class="mt-8 p-4 bg-gray-100 rounded-md hidden">
+            <h2 class="text-xl font-bold mb-4">Comment calculer le Salaire Journalier de Référence (SJR)</h2>
+            <p>1. Additionnez vos rémunérations brutes :</p>
+            <ul class="list-disc pl-5 mb-4">
+                <li>Sur les 2 dernières années si vous avez moins de 53 ans</li>
+                <li>Sur les 3 dernières années si vous avez 53 ans ou plus</li>
+            </ul>
+            <p>2. Le système calcule automatiquement le nombre de jours calendaires sur la période concernée.</p>
+            <p><strong>Note :</strong> Les rémunérations mensuelles sont plafonnées à 15 456 €.</p>
+            
+            <div class="remunerations-list">
+                <h3 class="font-bold">Rémunérations prises en compte pour le calcul du SJR :</h3>
+                <ul>
+                    <li>Salaire de base</li>
+                    <li>Indemnités de 13è mois (uniquement pour la partie portant sur le 12è mois)</li>
+                    <li>Primes de bilan (uniquement pour la partie portant sur le 12è mois)</li>
+                    <li>Gratifications perçues (uniquement pour la partie portant sur le 12è mois)</li>
+                    <li class="not-included">Remboursements pour frais professionnels</li>
+                    <li class="not-included">Indemnités de licenciement ou de départ</li>
+                    <li class="not-included">Indemnités de rupture conventionnelle</li>
+                    <li class="not-included">Indemnités compensatrices de congés payés</li>
+                    <li class="not-included">Indemnité de fin de mission (prime de précarité)</li>
+                    <li class="not-included">Indemnités de préavis ou de non-concurrence</li>
+                    <li class="not-included">Indemnités journalières de la Sécurité sociale</li>
+                </ul>
+            </div>
+        </div>
+        <div id="result" class="mt-8 p-4 bg-gray-100 rounded-md hidden"></div>
+    </div>
+
+    <script>
+        const ageInput = document.getElementById('age');
+        const salaireInput = document.getElementById('salaire-input');
+        const dateFinInput = document.getElementById('date-fin-input');
+        const periodeSpan = document.getElementById('periode');
+        const sjrInfo = document.getElementById('sjr-info');
+        const resultDiv = document.getElementById('result');
+
+        ageInput.addEventListener('input', function() {
+            const age = parseInt(this.value);
+            if (age >= 16 && age <= 100) {
+                salaireInput.classList.remove('hidden');
+                dateFinInput.classList.remove('hidden');
+                sjrInfo.classList.remove('hidden');
+                resultDiv.classList.add('hidden');
+                if (age < 53) {
+                    periodeSpan.textContent = 'les 2 dernières années';
+                } else {
+                    periodeSpan.textContent = 'les 3 dernières années';
+                }
+            } else {
+                salaireInput.classList.add('hidden');
+                dateFinInput.classList.add('hidden');
+                sjrInfo.classList.add('hidden');
+                resultDiv.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('are-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const age = parseInt(document.getElementById('age').value);
+            const salaire = parseFloat(document.getElementById('salaire').value);
+            const dateFin = new Date(document.getElementById('date-fin').value);
+            
+            if (isNaN(age) || age < 16 || age > 100 || isNaN(salaire) || salaire < 0 || isNaN(dateFin.getTime())) {
+                alert('Veuillez entrer des valeurs valides pour l\'âge, le salaire et la date de fin de contrat.');
+                return;
+            }
+
+            const periodeAnnees = age < 53 ? 2 : 3;
+            const dateDebut = new Date(dateFin);
+            dateDebut.setFullYear(dateDebut.getFullYear() - periodeAnnees);
+            const jours = Math.ceil((dateFin - dateDebut) / (1000 * 60 * 60 * 24));
+
+            const sjr = salaire / jours;
+            
+            const partiFixe = 13.11;
+            const partieVariable = sjr * 0.404;
+            let montantBrutJournalier = partiFixe + partieVariable;
+
+            // Application des limites
+            montantBrutJournalier = Math.max(montantBrutJournalier, sjr * 0.57);
+            montantBrutJournalier = Math.min(montantBrutJournalier, sjr * 0.75);
+
+            // Vérification du montant minimum
+            const montantMinimum = 31.97;
+            montantBrutJournalier = Math.max(montantBrutJournalier, montantMinimum);
+
+            // Calcul de la dégressivité
+            const degressiviteAppliquee = montantBrutJournalier > 159.68;
+            const montantDegressif = degressiviteAppliquee ? Math.max(montantBrutJournalier * 0.7, 92.11) : null;
+
+            // Calcul du montant net
+            const prelevementSJR = Math.min(sjr * 0.03, montantBrutJournalier - 31.97);
+            const montantNetJournalier = montantBrutJournalier - prelevementSJR;
+
+            // Masquer les explications initiales
+            sjrInfo.classList.add('hidden');
+
+            // Affichage des résultats
+            resultDiv.innerHTML = `
+                <h2 class="text-xl font-bold mb-4">Résultats du calcul de l'ARE</h2>
+                <p><strong>Période prise en compte :</strong> ${periodeAnnees} années (${jours} jours)</p>
+                <p><strong>Salaire Journalier de Référence (SJR) :</strong> ${sjr.toFixed(2)} €</p>
+                <p><strong>Montant brut journalier :</strong> ${montantBrutJournalier.toFixed(2)} €</p>
+                <p><strong>Montant net journalier :</strong> ${montantNetJournalier.toFixed(2)} €</p>
+                <p><strong>Montant brut mensuel (30 jours) :</strong> ${(montantBrutJournalier * 30).toFixed(2)} €</p>
+                <p><strong>Montant net mensuel (30 jours) :</strong> ${(montantNetJournalier * 30).toFixed(2)} €</p>
+                ${degressiviteAppliquee ? `
+                <div class="degressivite-info">
+                    <h3 class="text-lg font-bold mb-2">Information sur la dégressivité</h3>
+                    <p>La dégressivité s'applique à partir du 7e mois d'indemnisation car votre montant journalier de l'ARE dépasse 159,68 €.</p>
+                    <p>À partir du 7e mois, votre allocation journalière sera réduite à ${montantDegressif.toFixed(2)} €.</p>
+                </div>
+                ` : ''}
+                <h3 class="text-lg font-bold mt-4 mb-2">Explications détaillées :</h3>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>Partie fixe : ${partiFixe} €</li>
+                    <li>Partie variable (40,4% du SJR) : ${partieVariable.toFixed(2)} €</li>
+                    <li>Le montant brut est limité entre 57% et 75% du SJR</li>
+                    <li>Un prélèvement de 3% du SJR est effectué : ${prelevementSJR.toFixed(2)} €</li>
+                    ${degressiviteAppliquee ? `<li>La dégressivité s'applique car le montant journalier dépasse 159,68 €</li>` : ''}
+                </ul>
+            `;
+            resultDiv.classList.remove('hidden');
+        });
+
+        document.querySelector('button[type="reset"]').addEventListener('click', function() {
+            resultDiv.classList.add('hidden');
+            salaireInput.classList.add('hidden');
+            dateFinInput.classList.add('hidden');
+            sjrInfo.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>

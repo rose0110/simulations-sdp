@@ -1,0 +1,388 @@
+<html><head><base href="https://www.simulationindemnite.fr/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur complet d'indemnité de départ</title>
+<style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
+    h1, h2, h3 { color: #2c3e50; }
+    .mb-3 { margin-bottom: 20px; }
+    .hidden { display: none; }
+    .fade-in { animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .form-control { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+    .btn { padding: 12px 20px; background-color: #3498db; color: white; border: none; cursor: pointer; transition: background-color 0.3s; border-radius: 4px; }
+    .btn:hover { background-color: #2980b9; }
+    .btn-secondary { background-color: #2ecc71; }
+    .btn-secondary:hover { background-color: #27ae60; }
+    .info-bulle { font-size: 0.9em; color: #7f8c8d; margin-top: 5px; }
+    .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+    .alert-warning { color: #8a6d3b; background-color: #fcf8e3; border-color: #faebcc; }
+    .salaire-input { width: 120px; display: inline-block; margin-right: 10px; }
+    .flex-container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .result-card { background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 8px; padding: 25px; margin-top: 30px; }
+    .result-title { color: #2980b9; margin-bottom: 20px; text-align: center; }
+    .result-detail { margin-bottom: 15px; font-size: 1.1em; }
+    .result-explanation { background-color: #d5e5f2; padding: 20px; border-radius: 8px; margin-top: 20px; }
+    .anciennete-message { font-weight: bold; margin-top: 10px; color: #27ae60; padding: 10px; background-color: #e8f6e9; border-radius: 4px; }
+    label { font-weight: bold; color: #34495e; }
+    select.form-control { appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px top 50%; background-size: 12px auto; padding-right: 30px; }
+    #salaireReferenceCalcule { font-size: 1.2em; font-weight: bold; color: #2c3e50; background-color: #ecf0f1; padding: 10px; border-radius: 4px; margin-top: 10px; }
+    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+    .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; }
+    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+    .close:hover, .close:focus { color: black; text-decoration: none; cursor: pointer; }
+    .button-group { display: flex; justify-content: space-between; margin-top: 20px; }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Simulateur complet d'indemnité de départ</h1>
+        
+        <form id="indemniteForm">
+            <div class="mb-3">
+                <label for="motifRupture">Motif de rupture :</label>
+                <select id="motifRupture" class="form-control" required>
+                    <option value="">Choisissez le motif</option>
+                    <option value="rupture_conventionnelle">Rupture conventionnelle</option>
+                    <option value="retraite_employeur">Mise à la retraite (à l'initiative de l'employeur)</option>
+                    <option value="licenciement_personnel">Licenciement pour motif personnel (sauf faute grave ou lourde)</option>
+                    <option value="licenciement_inaptitude_pro">Licenciement pour inaptitude d'origine professionnelle</option>
+                    <option value="licenciement_inaptitude_non_pro">Licenciement pour inaptitude d'origine non professionnelle</option>
+                    <option value="licenciement_economique">Licenciement pour motif économique</option>
+                    <option value="retraite_salarie">Départ volontaire à la retraite (à l'initiative du salarié)</option>
+                    <option value="demission">Démission</option>
+                    <option value="fin_periode_essai">Fin de période d'essai</option>
+                    <option value="licenciement_faute_grave">Licenciement pour faute grave</option>
+                    <option value="licenciement_faute_lourde">Licenciement pour faute lourde</option>
+                    <option value="rupture_cdd">Rupture anticipée du CDD </option>
+                    <option value="force_majeure">Force majeure</option>
+                    <option value="prise_acte">Prise d'acte de la rupture du contrat de travail</option>
+                    <option value="resiliation_judiciaire">Résiliation judiciaire</option>
+                </select>
+                <div class="info-bulle">Sélectionnez le motif de rupture du contrat de travail.</div>
+            </div>
+
+            <div id="messageNoDroit" class="alert alert-warning hidden">
+                Le salarié n'a pas droit à l'indemnité de départ pour ce motif. Seuls les congés payés sont dus.
+            </div>
+
+            <div id="messageFauteLourde" class="alert alert-warning hidden">
+                Le salarié n'a pas droit à l'indemnité de départ pour ce motif. Seuls les congés payés acquis sur l'année N-1 sont dus. Les congés payés en cours d'acquisition ne sont pas dus.
+            </div>
+
+            <div id="calculIndemnite" class="hidden">
+                <div id="ancienneteManuelle" class="mb-3">
+                    <label>Ancienneté pour l'éligibilité :</label>
+                    <div class="flex-container">
+                        <input type="number" id="anneesEligibilite" placeholder="Années" min="0" class="form-control" style="width: 45%;" required>
+                        <input type="number" id="moisEligibilite" placeholder="Mois" min="0" max="11" class="form-control" style="width: 45%;" required>
+                    </div>
+                    <div id="ancienneteMessageEligibilite" class="anciennete-message"></div>
+                </div>
+
+                <div id="ancienneteCalcul" class="mb-3 hidden">
+                    <label>Ancienneté pour le calcul de l'indemnité :</label>
+                    <div class="flex-container">
+                        <input type="number" id="anneesCalcul" placeholder="Années" min="0" class="form-control" style="width: 45%;" required>
+                        <input type="number" id="moisCalcul" placeholder="Mois" min="0" max="11" class="form-control" style="width: 45%;" required>
+                    </div>
+                    <div id="ancienneteMessageCalcul" class="anciennete-message"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="salaireReference">Salaire de référence :</label>
+                    <input type="number" id="salaireReference" class="form-control" placeholder="Entrez le salaire de référence" required>
+                    <div class="info-bulle">Entrez le salaire de référence mensuel brut.</div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="ouvrirCalculSalaire" class="btn btn-secondary">Calculer le salaire de référence</button>
+                    <button type="submit" class="btn">Calculer l'indemnité</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="result" class="hidden fade-in result-card"></div>
+        <button id="resetButton" class="btn hidden" style="margin-top: 20px;">Recommencer</button>
+    </div>
+
+    <!-- Modal pour le calcul du salaire de référence -->
+    <div id="modalCalculSalaire" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Calcul du salaire de référence</h2>
+            <div class="mb-3">
+                <label for="dernierMoisConnu">Dernier mois connu :</label>
+                <input type="month" id="dernierMoisConnu" class="form-control" required>
+            </div>
+            <div id="salaires12mois"></div>
+            <button type="button" id="recopierSalaires" class="btn" style="margin-top: 10px; margin-bottom: 20px;">Recopier les salaires</button>
+            <h3>Primes des 3 derniers mois</h3>
+            <div id="primes3mois"></div>
+            <div class="mb-3">
+                <label>Salaire de référence calculé :</label>
+                <div id="salaireReferenceCalcule">0.00 €</div>
+            </div>
+            <button type="button" id="validerSalaireReference" class="btn">Valider</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('indemniteForm');
+            const motifRupture = document.getElementById('motifRupture');
+            const messageNoDroit = document.getElementById('messageNoDroit');
+            const messageFauteLourde = document.getElementById('messageFauteLourde');
+            const calculIndemnite = document.getElementById('calculIndemnite');
+            const ancienneteCalcul = document.getElementById('ancienneteCalcul');
+            const salaires12mois = document.getElementById('salaires12mois');
+            const primes3mois = document.getElementById('primes3mois');
+            const dernierMoisConnu = document.getElementById('dernierMoisConnu');
+            const result = document.getElementById('result');
+            const resetButton = document.getElementById('resetButton');
+            const ancienneteMessageEligibilite = document.getElementById('ancienneteMessageEligibilite');
+            const ancienneteMessageCalcul = document.getElementById('ancienneteMessageCalcul');
+            const salaireReferenceCalcule = document.getElementById('salaireReferenceCalcule');
+            const salaireReference = document.getElementById('salaireReference');
+            const ouvrirCalculSalaire = document.getElementById('ouvrirCalculSalaire');
+            const modalCalculSalaire = document.getElementById('modalCalculSalaire');
+            const validerSalaireReference = document.getElementById('validerSalaireReference');
+            const recopierSalaires = document.getElementById('recopierSalaires');
+
+            // Ouvrir la modal
+            ouvrirCalculSalaire.onclick = function() {
+                modalCalculSalaire.style.display = "block";
+                genererChampsSalaires();
+            }
+
+            // Fermer la modal
+            document.getElementsByClassName('close')[0].onclick = function() {
+                modalCalculSalaire.style.display = "none";
+            }
+
+            // Fermer la modal en cliquant en dehors
+            window.onclick = function(event) {
+                if (event.target == modalCalculSalaire) {
+                    modalCalculSalaire.style.display = "none";
+                }
+            }
+
+            function genererChampsSalaires() {
+                salaires12mois.innerHTML = '<h3>12 derniers salaires bruts</h3>';
+                primes3mois.innerHTML = '';
+                const date = new Date(dernierMoisConnu.value + "-01");
+                
+                for (let i = 0; i < 12; i++) {
+                    const moisAnnee = new Date(date.getFullYear(), date.getMonth() - i, 1)
+                        .toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `salaire${i+1}`;
+                    input.className = 'form-control salaire-input';
+                    input.placeholder = `${moisAnnee}`;
+                    input.required = true;
+                    input.addEventListener('input', calculerSalaireReference);
+                    salaires12mois.appendChild(input);
+                }
+
+                for (let i = 0; i < 3; i++) {
+                    const moisAnnee = new Date(date.getFullYear(), date.getMonth() - i, 1)
+                        .toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `prime${i+1}`;
+                    input.className = 'form-control salaire-input';
+                    input.placeholder = `Prime ${moisAnnee}`;
+                    input.required = true;
+                    input.addEventListener('input', calculerSalaireReference);
+                    primes3mois.appendChild(input);
+                }
+            }
+
+            function calculerSalaireReference() {
+                let totalSalaire = 0;
+                for (let i = 1; i <= 12; i++) {
+                    totalSalaire += parseFloat(document.getElementById(`salaire${i}`).value) || 0;
+                }
+                for (let i = 1; i <= 3; i++) {
+                    totalSalaire += parseFloat(document.getElementById(`prime${i}`).value) || 0;
+                }
+                const salaireRef = totalSalaire / 12;
+                salaireReferenceCalcule.textContent = salaireRef.toFixed(2) + ' €';
+            }
+
+            dernierMoisConnu.addEventListener('change', genererChampsSalaires);
+
+            validerSalaireReference.addEventListener('click', function() {
+                const salaireCalcule = parseFloat(salaireReferenceCalcule.textContent);
+                salaireReference.value = salaireCalcule.toFixed(2);
+                modalCalculSalaire.style.display = "none";
+            });
+
+            recopierSalaires.addEventListener('click', function() {
+                const dernierSalaire = parseFloat(document.getElementById('salaire1').value) || 0;
+                for (let i = 2; i <= 12; i++) {
+                    document.getElementById(`salaire${i}`).value = dernierSalaire.toFixed(2);
+                }
+                calculerSalaireReference();
+            });
+
+            motifRupture.addEventListener('change', function() {
+                const selectedMotif = this.value;
+                const motifsAvecIndemnite = ['rupture_conventionnelle', 'retraite_employeur', 'licenciement_personnel', 'licenciement_inaptitude_pro', 'licenciement_inaptitude_non_pro', 'licenciement_economique', 'retraite_salarie'];
+                
+                messageNoDroit.classList.add('hidden');
+                messageFauteLourde.classList.add('hidden');
+                calculIndemnite.classList.add('hidden');
+                ancienneteCalcul.classList.add('hidden');
+                ancienneteMessageEligibilite.textContent = '';
+                ancienneteMessageCalcul.textContent = '';
+
+                if (motifsAvecIndemnite.includes(selectedMotif)) {
+                    calculIndemnite.classList.remove('hidden');
+                    switch(selectedMotif) {
+                        case 'retraite_salarie':
+                            ancienneteMessageEligibilite.textContent = "Ancienneté à la date de fin du préavis (effectué ou non)";
+                            break;
+                        case 'retraite_employeur':
+                            ancienneteMessageEligibilite.textContent = "Ancienneté à la date de notification de la mise à la retraite";
+                            ancienneteCalcul.classList.remove('hidden');
+                            ancienneteMessageCalcul.textContent = "Ancienneté à la date de fin du préavis (effectué ou non)";
+                            break;
+                        case 'licenciement_personnel':
+                        case 'licenciement_inaptitude_pro':
+                        case 'licenciement_inaptitude_non_pro':
+                        case 'licenciement_economique':
+                            ancienneteMessageEligibilite.textContent = "Ancienneté à la date d'envoi de la lettre de licenciement";
+                            ancienneteCalcul.classList.remove('hidden');
+                            ancienneteMessageCalcul.textContent = "Ancienneté à la date de fin du préavis (effectué ou non)";
+                            break;
+                        case 'rupture_conventionnelle':
+                            ancienneteMessageEligibilite.textContent = "Ancienneté à la date de fin de contrat";
+                            break;
+                    }
+                } else if (selectedMotif === 'licenciement_faute_lourde') {
+                    messageFauteLourde.classList.remove('hidden');
+                } else if (selectedMotif !== '') {
+                    messageNoDroit.classList.remove('hidden');
+                }
+            });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                // Logique de calcul de l'indemnité
+                let indemnite = 0;
+                const motif = motifRupture.value;
+                const anneesEligibilite = parseInt(document.getElementById('anneesEligibilite').value) || 0;
+                const moisEligibilite = parseInt(document.getElementById('moisEligibilite').value) || 0;
+                const ancienneteEligibilite = anneesEligibilite + (moisEligibilite / 12);
+                
+                let ancienneteCalcul = ancienneteEligibilite;
+                if (!document.getElementById('ancienneteCalcul').classList.contains('hidden')) {
+                    const anneesCalcul = parseInt(document.getElementById('anneesCalcul').value) || 0;
+                    const moisCalcul = parseInt(document.getElementById('moisCalcul').value) || 0;
+                    ancienneteCalcul = anneesCalcul + (moisCalcul / 12);
+                }
+                
+                const salaireRef = parseFloat(salaireReference.value) || 0;
+
+                if (motif === 'rupture_conventionnelle' || motif === 'licenciement_personnel' || motif === 'licenciement_economique') {
+                    if (ancienneteCalcul < 1) {
+                        indemnite = 0;
+                    } else if (ancienneteCalcul <= 10) {
+                        indemnite = (1/4 * salaireRef * ancienneteCalcul);
+                    } else {
+                        indemnite = (1/4 * salaireRef * 10) + (1/3 * salaireRef * (ancienneteCalcul - 10));
+                    }
+                } else if (motif === 'licenciement_inaptitude_pro') {
+                    indemnite = 2 * ((1/4 * salaireRef * Math.min(ancienneteCalcul, 10)) + (1/3 * salaireRef * Math.max(ancienneteCalcul - 10, 0)));
+                } else if (motif === 'retraite_salarie') {
+                    if (ancienneteEligibilite >= 10) {
+                        if (ancienneteEligibilite < 15) {
+                            indemnite = 0.5 * salaireRef;
+                        } else if (ancienneteEligibilite < 20) {
+                            indemnite = 1 * salaireRef;
+                        } else if (ancienneteEligibilite < 30) {
+                            indemnite = 1.5 * salaireRef;
+                        } else {
+                            indemnite = 2 * salaireRef;
+                        }
+                    }
+                } else if (motif === 'retraite_employeur') {
+                    if (ancienneteEligibilite >= 1) {
+                        indemnite = (1/5 * salaireRef * Math.min(ancienneteCalcul, 10)) + (2/15 * salaireRef * Math.max(ancienneteCalcul - 10, 0));
+                    }
+                }
+
+                let explanation = '';
+                switch(motif) {
+                    case 'rupture_conventionnelle':
+                        explanation = "L'indemnité de rupture conventionnelle est calculée sur la base de l'indemnité légale de licenciement. Elle ne peut être inférieure à cette dernière.";
+                        break;
+                    case 'licenciement_personnel':
+                    case 'licenciement_economique':
+                        explanation = "L'indemnité légale de licenciement est calculée à partir de votre salaire de référence et de votre ancienneté. Le calcul diffère selon que votre ancienneté est inférieure ou supérieure à 10 ans.";
+                        break;
+                    case 'licenciement_inaptitude_pro':
+                        explanation = "En cas d'inaptitude d'origine professionnelle, l'indemnité est doublée par rapport à l'indemnité légale de licenciement classique.";
+                        break;
+                    case 'retraite_salarie':
+                        explanation = "L'indemnité de départ volontaire à la retraite est calculée en fonction de l'ancienneté du salarié dans l'entreprise. Elle n'est due que si le salarié a au moins 10 ans d'ancienneté.";
+                        break;
+                    case 'retraite_employeur':
+                        explanation = "L'indemnité de mise à la retraite est calculée comme l'indemnité légale de licenciement, mais avec un calcul légèrement différent.";
+                        break;
+                }
+
+                result.innerHTML = `
+                    <h2 class="result-title">Résultat du calcul</h2>
+                    <div class="result-detail"><strong>Indemnité calculée :</strong> ${indemnite.toFixed(2)} €</div>
+                    ${indemnite === 0 ? `<div class="result-detail" style="color: red;"><strong>Le salarié n'est pas éligible à l'indemnité pour ce motif avec l'ancienneté fournie.</strong></div>` : ''}
+                    <div class="result-detail"><strong>Ancienneté prise en compte :</strong> ${ancienneteCalcul.toFixed(2)} années</div>
+                    <div class="result-detail"><strong>Salaire de référence :</strong> ${salaireRef.toFixed(2)} €</div>
+                    <div class="result-explanation">
+                        <h3>Explication du calcul</h3>
+                        <p>${explanation}</p>
+                        ${indemnite > 0 ? `
+                        <p>Pour une ancienneté de ${ancienneteCalcul.toFixed(2)} ans et un salaire de référence de ${salaireRef.toFixed(2)} €, le calcul est le suivant :</p>
+                        <ul>
+                            ${motif === 'retraite_salarie' ? `
+                                <li>Ancienneté de ${ancienneteCalcul.toFixed(2)} ans : ${indemnite.toFixed(2)} € (${indemnite / salaireRef} mois de salaire)</li>
+                            ` : motif === 'retraite_employeur' ? `
+                                <li>Pour les 10 premières années : 1/5 * ${salaireRef.toFixed(2)} * ${Math.min(ancienneteCalcul, 10)} = ${(1/5 * salaireRef * Math.min(ancienneteCalcul, 10)).toFixed(2)} €</li>
+                                ${ancienneteCalcul > 10 ? `<li>Pour les années au-delà de 10 ans : 2/15 * ${salaireRef.toFixed(2)} * ${ancienneteCalcul - 10} = ${(2/15 * salaireRef * (ancienneteCalcul - 10)).toFixed(2)} €</li>` : ''}
+                            ` : `
+                                <li>Pour les 10 premières années : 1/4 * ${salaireRef.toFixed(2)} * ${Math.min(ancienneteCalcul, 10)} = ${(1/4 * salaireRef * Math.min(ancienneteCalcul, 10)).toFixed(2)} €</li>
+                                ${ancienneteCalcul > 10 ? `<li>Pour les années au-delà de 10 ans : 1/3 * ${salaireRef.toFixed(2)} * ${ancienneteCalcul - 10} = ${(1/3 * salaireRef * (ancienneteCalcul - 10)).toFixed(2)} €</li>` : ''}
+                            `}
+                        </ul>
+                        ` : ''}
+                    </div>
+                `;
+                result.classList.remove('hidden');
+                resetButton.classList.remove('hidden');
+                form.classList.add('hidden');
+            });
+
+            resetButton.addEventListener('click', function() {
+                form.reset();
+                result.classList.add('hidden');
+                resetButton.classList.add('hidden');
+                form.classList.remove('hidden');
+                messageNoDroit.classList.add('hidden');
+                messageFauteLourde.classList.add('hidden');
+                calculIndemnite.classList.add('hidden');
+                ancienneteCalcul.classList.add('hidden');
+                ancienneteMessageEligibilite.textContent = '';
+                ancienneteMessageCalcul.textContent = '';
+                salaireReferenceCalcule.textContent = '0.00 €';
+            });
+
+            // Initialiser la date du dernier mois connu
+            const currentDate = new Date();
+            dernierMoisConnu.value = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+        });
+    </script>
+</body>
+</html>

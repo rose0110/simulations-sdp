@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur de délai entre deux CDD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f6f3;
+            border-left: 5px solid #2ecc71;
+            border-radius: 4px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulateur de délai entre deux CDD</h1>
+        <form id="cddForm">
+            <label for="contractDuration">Durée du CDD initial (en jours) :</label>
+            <input type="number" id="contractDuration" min="1" required>
+
+            <label for="contractType">Type de contrat :</label>
+            <select id="contractType">
+                <option value="standard">CDD standard</option>
+                <option value="replacement">Remplacement d'un salarié absent</option>
+                <option value="seasonal">Emploi saisonnier</option>
+                <option value="usage">Contrat d'usage</option>
+            </select>
+
+            <button type="submit">Calculer le délai</button>
+        </form>
+
+        <div id="result" class="hidden"></div>
+    </div>
+
+    <script>
+        document.getElementById('cddForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculateDelay();
+        });
+
+        function calculateDelay() {
+            const contractDuration = parseInt(document.getElementById('contractDuration').value);
+            const contractType = document.getElementById('contractType').value;
+            let delay = 0;
+            let message = '';
+
+            if (contractType !== 'standard') {
+                message = "Aucun délai de carence n'est nécessaire pour ce type de contrat.";
+            } else if (contractDuration < 14) {
+                message = "Aucun délai de carence n'est nécessaire pour les contrats de moins de 14 jours.";
+            } else {
+                delay = Math.ceil(contractDuration / 3);
+                message = `Le délai de carence est de ${delay} jours.`;
+            }
+
+            displayResult(message);
+        }
+
+        function displayResult(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur IJSS Accident de Travail</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #bdc3c7;
+        }
+        .btn-primary, .btn-success {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #3498db;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        #results {
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .result {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .calculation-detail {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .detail-label {
+            color: #7f8c8d;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .absence-list {
+            columns: 2;
+            -webkit-columns: 2;
+            -moz-columns: 2;
+        }
+        .absence-list li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">Calculateur d'IJSS pour Accident de Travail</h1>
+        <div id="step1" class="fade-in">
+            <p class="lead">Je suis votre assistante pour le calcul des IJSS accident de travail. Pour commencer, indiquez-moi la date de début et la date de fin de l'arrêt.</p>
+            <div class="mb-3">
+                <label for="startDate" class="form-label">Date de début</label>
+                <input type="date" id="startDate" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="endDate" class="form-label">Date de fin</label>
+                <input type="date" id="endDate" class="form-control" required>
+            </div>
+            <button onclick="goToStep2()" class="btn btn-primary">Continuer</button>
+        </div>
+
+        <div id="step2" class="hidden fade-in">
+            <p class="lead">Quelle est la date de l'accident ?</p>
+            <p class="text-muted">Notez que si la date de l'accident est le premier jour de l'arrêt, ce jour n'est pas payé par la CPAM. En cas d'accident du travail, le jour où se produit l'accident est intégralement payé par votre employeur.</p>
+            <div class="mb-3">
+                <label for="accidentDate" class="form-label">Date de l'accident</label>
+                <input type="date" id="accidentDate" class="form-control" required>
+            </div>
+            <button onclick="goToStep3()" class="btn btn-primary">Continuer</button>
+        </div>
+
+        <div id="step3" class="hidden fade-in">
+            <p class="lead">Veuillez fournir le salaire brut rétabli du dernier mois civil précédant l'arrêt en raison de l'une des absences suivantes :</p>
+            <ul class="absence-list">
+                <li>Maladie</li>
+                <li>Accident du travail</li>
+                <li>Maternité</li>
+                <li>Paternité/Accueil de l'enfant/Adoption</li>
+                <li>Chômage total ou partiel</li>
+                <li>Fermeture de l'établissement</li>
+                <li>Congés payés</li>
+                <li>Absence autorisée</li>
+            </ul>
+            <p id="previousMonthDisplay" class="fw-bold"></p>
+            <div class="mb-3">
+                <label for="lastMonthSalary" class="form-label">Salaire brut rétabli</label>
+                <input type="number" id="lastMonthSalary" class="form-control" placeholder="Entrez le montant" required>
+            </div>
+            <button onclick="calculateIJSS()" class="btn btn-success">Calculer</button>
+        </div>
+
+        <div id="results" class="hidden fade-in">
+            <h2 class="mb-4">Résultats</h2>
+            <div class="result">Salaire journalier de référence : <span id="referenceSalary" class="fw-bold"></span> €</div>
+            <div class="result">IJSS BRUT PAR JOUR : <span id="dailyGrossIJSS" class="fw-bold"></span> €</div>
+            <div class="result">IJSS BRUT SUR LA PÉRIODE : <span id="periodGrossIJSS" class="fw-bold"></span> €</div>
+            <div class="result">IJSS NET SUR LA PÉRIODE : <span id="periodNetIJSS" class="fw-bold"></span> €</div>
+            
+            <div class="calculation-detail mt-4">
+                <h3 class="detail-label">Détails du calcul :</h3>
+                <ol>
+                    <li>Salaire brut rétabli : <span id="salary" class="fw-bold"></span> €</li>
+                    <li>Calcul du salaire journalier de référence :
+                        <ul>
+                            <li>Formule : Salaire brut / 30.42</li>
+                            <li>Calcul : <span id="calculationReference" class="fw-bold"></span></li>
+                        </ul>
+                    </li>
+                    <li>Calcul de l'IJSS brut par jour :
+                        <ul>
+                            <li>Formule : 60% du salaire journalier de référence (plafonné à 232.03€)</li>
+                            <li>Calcul : <span id="calculationDailyGross" class="fw-bold"></span></li>
+                        </ul>
+                    </li>
+                    <li>Calcul de l'IJSS brut sur la période :
+                        <ul>
+                            <li>Formule : IJSS brut par jour * nombre de jours d'arrêt (28 jours maximum)</li>
+                            <li>Calcul : <span id="calculationPeriodGross" class="fw-bold"></span></li>
+                        </ul>
+                    </li>
+                    <li>Calcul de l'IJSS net sur la période :
+                        <ul>
+                            <li>Formule : IJSS brut sur la période * 0.79 (déduction de 21% pour les charges sociales)</li>
+                            <li>Calcul : <span id="calculationPeriodNet" class="fw-bold"></span></li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+            <p class="text-muted mt-4">Veuillez noter qu'il s'agit d'une simulation ; les règles peuvent varier selon votre situation spécifique.</p>
+            <button onclick="resetCalculator()" class="btn btn-primary mt-3">Relancer le calcul</button>
+        </div>
+    </div>
+
+    <script>
+        function getPreviousMonth(date) {
+            const dt = new Date(date);
+            dt.setMonth(dt.getMonth() - 1);
+            return dt.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+        }
+
+        function goToStep2() {
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+        }
+
+        function goToStep3() {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+            const startDate = document.getElementById('startDate').value;
+            document.getElementById('previousMonthDisplay').innerHTML = `Salaire brut du mois de ${getPreviousMonth(startDate)} :`;
+        }
+
+        function calculateIJSS() {
+            const salary = Number(document.getElementById('lastMonthSalary').value);
+            const dailyRate = salary / 30.42;
+            const dailyGross = Math.min(dailyRate * 0.60, 232.03);
+            const periodGross = dailyGross * 28;
+            const periodNet = periodGross * 0.79;
+
+            document.getElementById('salary').innerText = salary.toFixed(2);
+            document.getElementById('calculationReference').innerText = `${salary.toFixed(2)} / 30,42 = ${dailyRate.toFixed(2)} €`;
+            document.getElementById('calculationDailyGross').innerText = `Min(${dailyRate.toFixed(2)} * 0.60, 232.03) = ${dailyGross.toFixed(2)} €`;
+            document.getElementById('calculationPeriodGross').innerText = `${dailyGross.toFixed(2)} * 28 = ${periodGross.toFixed(2)} €`;
+            document.getElementById('calculationPeriodNet').innerText = `${periodGross.toFixed(2)} * 0.79 = ${periodNet.toFixed(2)} €`;
+
+            document.getElementById('referenceSalary').innerText = dailyRate.toFixed(2);
+            document.getElementById('dailyGrossIJSS').innerText = dailyGross.toFixed(2);
+            document.getElementById('periodGrossIJSS').innerText = periodGross.toFixed(2);
+            document.getElementById('periodNetIJSS').innerText = periodNet.toFixed(2);
+
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        function resetCalculator() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('accidentDate').value = '';
+            document.getElementById('lastMonthSalary').value = '';
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('step1').classList.remove('hidden');
+        }
+    </script>
+</body>
+
+</html>
