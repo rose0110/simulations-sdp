@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur Salaire Brut / Net 2024</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .radio-group input[type="radio"] {
+            width: auto;
+            margin-right: 8px;
+        }
+        .results {
+            background-color: #e8f6f3;
+            border: 1px solid #1abc9c;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .result-row:last-child {
+            border-bottom: none;
+        }
+        .result-row.highlight {
+            background-color: #d4edda;
+            margin: 0 -20px;
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .result-row.brut {
+            background-color: #cce5ff;
+        }
+        .result-row.net {
+            background-color: #d4edda;
+        }
+        .result-label {
+            color: #34495e;
+        }
+        .result-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .cotisations-detail {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .cotisations-detail h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1em;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .cotisation-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.9em;
+        }
+        .info {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        .reset-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .reset-btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulateur Brut / Net 2024</h1>
+
+        <div class="input-group">
+            <label>Je saisis mon salaire :</label>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="typeInput" value="brut" checked>
+                    Brut
+                </label>
+                <label>
+                    <input type="radio" name="typeInput" value="net">
+                    Net
+                </label>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="montant">Montant mensuel (€) :</label>
+            <input type="number" id="montant" placeholder="Ex: 2500" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label for="statut">Statut :</label>
+            <select id="statut">
+                <option value="nonCadre">Non-cadre</option>
+                <option value="cadre">Cadre</option>
+            </select>
+        </div>
+
+        <div id="results" class="results" style="display: none;">
+            <div class="result-row brut highlight">
+                <span class="result-label">Salaire Brut</span>
+                <span class="result-value" id="salaireBrut">0 €</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Cotisations salariales</span>
+                <span class="result-value" id="cotisations">0 €</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Taux de cotisations</span>
+                <span class="result-value" id="tauxCotisations">0 %</span>
+            </div>
+            <div class="result-row net highlight">
+                <span class="result-label">Salaire Net (avant impôt)</span>
+                <span class="result-value" id="salaireNet">0 €</span>
+            </div>
+
+            <div class="cotisations-detail">
+                <h3>Détail des cotisations salariales</h3>
+                <div id="detailCotisations"></div>
+            </div>
+        </div>
+
+        <div class="info">
+            <strong>Note :</strong> Ce simulateur utilise les taux 2024 pour un salarié du secteur privé.
+            Le résultat est une estimation. Le salaire net affiché est avant prélèvement à la source.
+        </div>
+
+        <button class="reset-btn" onclick="resetForm()">Réinitialiser</button>
+    </div>
+
+    <script>
+        // Constantes 2024
+        const PSS = 3864; // Plafond Mensuel Sécurité Sociale 2024
+        const SMIC_MENSUEL = 1766.92; // SMIC mensuel brut 2024
+
+        // Taux de cotisations salariales 2024
+        const cotisationsConfig = {
+            assuranceVieillessePlafonnee: { nom: "Assurance vieillesse plafonnée", taux: 0.069, plafond: PSS },
+            assuranceVieillesseDepl: { nom: "Assurance vieillesse déplafonnée", taux: 0.004, plafond: null },
+            agircArrcoT1: { nom: "Retraite complémentaire T1", taux: 0.0315, plafond: PSS },
+            agircArrcoT2: { nom: "Retraite complémentaire T2", taux: 0.0864, plafondMin: PSS, plafondMax: 8 * PSS },
+            cegT1: { nom: "CEG T1", taux: 0.0086, plafond: PSS },
+            cegT2: { nom: "CEG T2", taux: 0.0108, plafondMin: PSS, plafondMax: 8 * PSS },
+            csgDeductible: { nom: "CSG déductible", taux: 0.068, baseCoeff: 0.9825 },
+            csgCrdsNonDed: { nom: "CSG/CRDS non déductible", taux: 0.029, baseCoeff: 0.9825 },
+            apec: { nom: "APEC (cadres)", taux: 0.00024, plafond: 4 * PSS, cadreOnly: true }
+        };
+
+        // Éléments DOM
+        const montantInput = document.getElementById('montant');
+        const statutSelect = document.getElementById('statut');
+        const resultsDiv = document.getElementById('results');
+        const typeInputs = document.querySelectorAll('input[name="typeInput"]');
+
+        // Écouteurs d'événements
+        montantInput.addEventListener('input', calculer);
+        statutSelect.addEventListener('change', calculer);
+        typeInputs.forEach(input => input.addEventListener('change', calculer));
+
+        function calculer() {
+            const montant = parseFloat(montantInput.value) || 0;
+            const statut = statutSelect.value;
+            const typeInput = document.querySelector('input[name="typeInput"]:checked').value;
+
+            if (montant <= 0) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            resultsDiv.style.display = 'block';
+
+            let brut, net, cotisationsTotal, detailCotisations;
+
+            if (typeInput === 'brut') {
+                brut = montant;
+                const result = calculerCotisations(brut, statut);
+                cotisationsTotal = result.total;
+                detailCotisations = result.detail;
+                net = brut - cotisationsTotal;
+            } else {
+                // Calcul inverse : on part du net pour trouver le brut
+                // On utilise une approximation itérative
+                brut = trouverBrutDepuisNet(montant, statut);
+                const result = calculerCotisations(brut, statut);
+                cotisationsTotal = result.total;
+                detailCotisations = result.detail;
+                net = montant;
+            }
+
+            const tauxEffectif = (cotisationsTotal / brut) * 100;
+
+            // Affichage des résultats
+            document.getElementById('salaireBrut').textContent = formatMontant(brut);
+            document.getElementById('cotisations').textContent = formatMontant(cotisationsTotal);
+            document.getElementById('tauxCotisations').textContent = tauxEffectif.toFixed(2) + ' %';
+            document.getElementById('salaireNet').textContent = formatMontant(net);
+
+            // Détail des cotisations
+            let detailHTML = '';
+            for (const [key, value] of Object.entries(detailCotisations)) {
+                if (value.montant > 0) {
+                    detailHTML += `
+                        <div class="cotisation-row">
+                            <span>${value.nom}</span>
+                            <span>${formatMontant(value.montant)} (${(value.taux * 100).toFixed(2)}%)</span>
+                        </div>
+                    `;
+                }
+            }
+            document.getElementById('detailCotisations').innerHTML = detailHTML;
+        }
+
+        function calculerCotisations(brut, statut) {
+            let total = 0;
+            const detail = {};
+
+            // Assurance vieillesse plafonnée
+            const baseVP = Math.min(brut, PSS);
+            const montantVP = baseVP * cotisationsConfig.assuranceVieillessePlafonnee.taux;
+            detail.assuranceVieillessePlafonnee = {
+                nom: cotisationsConfig.assuranceVieillessePlafonnee.nom,
+                montant: montantVP,
+                taux: cotisationsConfig.assuranceVieillessePlafonnee.taux
+            };
+            total += montantVP;
+
+            // Assurance vieillesse déplafonnée
+            const montantVD = brut * cotisationsConfig.assuranceVieillesseDepl.taux;
+            detail.assuranceVieillesseDepl = {
+                nom: cotisationsConfig.assuranceVieillesseDepl.nom,
+                montant: montantVD,
+                taux: cotisationsConfig.assuranceVieillesseDepl.taux
+            };
+            total += montantVD;
+
+            // Retraite complémentaire T1
+            const baseT1 = Math.min(brut, PSS);
+            const montantT1 = baseT1 * cotisationsConfig.agircArrcoT1.taux;
+            detail.agircArrcoT1 = {
+                nom: cotisationsConfig.agircArrcoT1.nom,
+                montant: montantT1,
+                taux: cotisationsConfig.agircArrcoT1.taux
+            };
+            total += montantT1;
+
+            // Retraite complémentaire T2 (si brut > PSS)
+            const baseT2 = Math.max(0, Math.min(brut, 8 * PSS) - PSS);
+            const montantT2 = baseT2 * cotisationsConfig.agircArrcoT2.taux;
+            detail.agircArrcoT2 = {
+                nom: cotisationsConfig.agircArrcoT2.nom,
+                montant: montantT2,
+                taux: cotisationsConfig.agircArrcoT2.taux
+            };
+            total += montantT2;
+
+            // CEG T1
+            const montantCEG1 = baseT1 * cotisationsConfig.cegT1.taux;
+            detail.cegT1 = {
+                nom: cotisationsConfig.cegT1.nom,
+                montant: montantCEG1,
+                taux: cotisationsConfig.cegT1.taux
+            };
+            total += montantCEG1;
+
+            // CEG T2
+            const montantCEG2 = baseT2 * cotisationsConfig.cegT2.taux;
+            detail.cegT2 = {
+                nom: cotisationsConfig.cegT2.nom,
+                montant: montantCEG2,
+                taux: cotisationsConfig.cegT2.taux
+            };
+            total += montantCEG2;
+
+            // CSG déductible
+            const baseCSG = brut * 0.9825;
+            const montantCSGDed = baseCSG * cotisationsConfig.csgDeductible.taux;
+            detail.csgDeductible = {
+                nom: cotisationsConfig.csgDeductible.nom,
+                montant: montantCSGDed,
+                taux: cotisationsConfig.csgDeductible.taux
+            };
+            total += montantCSGDed;
+
+            // CSG/CRDS non déductible
+            const montantCSGNonDed = baseCSG * cotisationsConfig.csgCrdsNonDed.taux;
+            detail.csgCrdsNonDed = {
+                nom: cotisationsConfig.csgCrdsNonDed.nom,
+                montant: montantCSGNonDed,
+                taux: cotisationsConfig.csgCrdsNonDed.taux
+            };
+            total += montantCSGNonDed;
+
+            // APEC (cadres uniquement)
+            if (statut === 'cadre') {
+                const baseAPEC = Math.min(brut, 4 * PSS);
+                const montantAPEC = baseAPEC * cotisationsConfig.apec.taux;
+                detail.apec = {
+                    nom: cotisationsConfig.apec.nom,
+                    montant: montantAPEC,
+                    taux: cotisationsConfig.apec.taux
+                };
+                total += montantAPEC;
+            }
+
+            return { total, detail };
+        }
+
+        function trouverBrutDepuisNet(netCible, statut) {
+            // Méthode itérative pour trouver le brut à partir du net
+            let brut = netCible * 1.28; // Estimation initiale
+
+            for (let i = 0; i < 20; i++) {
+                const result = calculerCotisations(brut, statut);
+                const netCalcule = brut - result.total;
+                const diff = netCible - netCalcule;
+
+                if (Math.abs(diff) < 0.01) break;
+
+                brut += diff * 1.25;
+            }
+
+            return brut;
+        }
+
+        function formatMontant(montant) {
+            return montant.toFixed(2).replace('.', ',') + ' €';
+        }
+
+        function resetForm() {
+            montantInput.value = '';
+            statutSelect.value = 'nonCadre';
+            document.querySelector('input[name="typeInput"][value="brut"]').checked = true;
+            resultsDiv.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
